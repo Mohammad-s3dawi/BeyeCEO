@@ -8,7 +8,6 @@
 
   <ItemGroup>
     <Folder Include="KPIs\" />
-    <Folder Include="MarketData\" />
     <Folder Include="Alerts\" />
     <Folder Include="Auth\" />
   </ItemGroup>
