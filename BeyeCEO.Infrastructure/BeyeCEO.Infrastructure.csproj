@@ -15,7 +15,6 @@
     <Folder Include="ExternalServices\" />
     <Folder Include="BackgroundJobs\" />
     <Folder Include="Identity\" />
-    <Folder Include="Persistence\" />
   </ItemGroup>
 
   <ItemGroup>
