@@ -7,9 +7,11 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <Folder Include="KPIs\" />
     <Folder Include="Alerts\" />
-    <Folder Include="Auth\" />
+    <Folder Include="Auth\Entites\" />
+    <Folder Include="Auth\Interfaces\" />
+    <Folder Include="KPIs\Entites\" />
+    <Folder Include="KPIs\Interfaces\" />
   </ItemGroup>
 
 </Project>

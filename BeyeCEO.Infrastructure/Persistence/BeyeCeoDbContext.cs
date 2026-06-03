@@ -17,7 +17,7 @@ namespace BeyeCEO.Infrastructure.Persistence
        : base(options) { }
 
         // config schema
-        public DbSet<country> Countries => Set<Country>();
+        public DbSet<Country> Countries => Set<Country>();
         public DbSet<Bank> Banks => Set<Bank>();
         public DbSet<BankCountry> BankCountries => Set<BankCountry>();
         public DbSet<KpiDefinition> KpiDefinitions => Set<KpiDefinition>();
