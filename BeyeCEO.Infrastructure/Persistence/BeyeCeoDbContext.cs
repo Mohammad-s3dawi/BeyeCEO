@@ -1,4 +1,7 @@
-﻿using BeyeCEO.Domain.MarketData.Entities;
+﻿using BeyeCEO.Domain.Auth;
+using BeyeCEO.Domain.Auth.Entites;
+using BeyeCEO.Domain.KPIs.Entites;
+using BeyeCEO.Domain.MarketData.Entities;
 using BeyeCEO.Domain.News.Entities;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.ChangeTracking.Internal;

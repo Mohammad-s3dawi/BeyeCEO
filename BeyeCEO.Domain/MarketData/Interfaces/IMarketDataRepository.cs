@@ -7,25 +7,31 @@ using System.Threading.Tasks;
 
 namespace BeyeCEO.Domain.MarketData.Interfaces
 {
+
     public interface IMarketDataRepository
     {
-
-        // Global
+        // ── Global ────────────────────────────────────────────
         Task<IEnumerable<GlobalIndex>> GetLatestGlobalIndicesAsync();
         Task<IEnumerable<CurrencyRate>> GetLatestCurrencyRatesAsync();
         Task<IEnumerable<Commodity>> GetLatestCommoditiesAsync();
         Task<IEnumerable<InterestRate>> GetLatestInterestRatesAsync();
 
-        // Local — Jordan
-        Task<ASEData?> GetLatestASEDataAsync();
-        Task<IEnumerable<CBJIndicator>> GetLatestCBJIndicatorsAsync();
+        // ── Local — Any Country ───────────────────────────────
+        Task<IEnumerable<InterestRate>> GetInterestRatesByCountryAsync(string countryCode);
+        Task<StockExchangeData?> GetLatestStockExchangeDataAsync(string countryCode);
+        Task<IEnumerable<LocalIndicator>> GetLatestLocalIndicatorsAsync(string countryCode);
 
-        // Save
+        // ── Save Global ───────────────────────────────────────
         Task SaveGlobalIndexAsync(GlobalIndex index);
+        Task SaveGlobalIndicesRangeAsync(IEnumerable<GlobalIndex> indices);
         Task SaveCurrencyRateAsync(CurrencyRate rate);
+        Task SaveCurrencyRatesRangeAsync(IEnumerable<CurrencyRate> rates);
         Task SaveCommodityAsync(Commodity commodity);
+        Task SaveCommoditiesRangeAsync(IEnumerable<Commodity> commodities);
         Task SaveInterestRateAsync(InterestRate rate);
-        Task SaveASEDataAsync(ASEData data);
-        Task SaveCBJIndicatorAsync(CBJIndicator indicator);
+
+        // ── Save Local ────────────────────────────────────────
+        Task SaveStockExchangeDataAsync(StockExchangeData data);
+        Task SaveLocalIndicatorAsync(LocalIndicator indicator);
     }
 }

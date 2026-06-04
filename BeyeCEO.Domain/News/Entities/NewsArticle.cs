@@ -1,4 +1,5 @@
-﻿using BeyeCEO.Domain.News.Enums;
+﻿using BeyeCEO.Domain.MarketData.Entities;
+using BeyeCEO.Domain.News.Enums;
 using BeyeCEO.Domain.Shared;
 using System;
 using System.Collections.Generic;
@@ -8,7 +9,7 @@ using System.Threading.Tasks;
 
 namespace BeyeCEO.Domain.News.Entities
 {
-    public class NewsArticle:BaseEntity
+    public class NewsArticle : BaseEntity
     {
         public string TitleEN { get; private set; } = string.Empty;
         public string TitleAR { get; private set; } = string.Empty;
@@ -20,9 +21,13 @@ namespace BeyeCEO.Domain.News.Entities
         public string SourceUrl { get; private set; } = string.Empty;
         public string ImageUrl { get; private set; } = string.Empty;
         public string Category { get; private set; } = string.Empty;
+        public string? CountryCode { get; private set; }        // ← null = دولية
         public NewsScope Scope { get; private set; }
         public int ReadTimeMinutes { get; private set; }
         public DateTime PublishedAt { get; private set; }
+
+        // Navigation ← جديد
+        public Country? Country { get; private set; }           // ← nullable لأن الدولية ما عندها
 
         private NewsArticle() { }
 
@@ -32,8 +37,17 @@ namespace BeyeCEO.Domain.News.Entities
             string summary, string sourceName,
             string sourceLogoUrl, string sourceUrl,
             string imageUrl, string category,
-            NewsScope scope, DateTime publishedAt)
+            NewsScope scope, DateTime publishedAt,
+            string? countryCode = null)             // ← null للأخبار الدولية
         {
+            // Business Rule — المحلي لازم عنده CountryCode
+            if (scope == NewsScope.Local && string.IsNullOrWhiteSpace(countryCode))
+                throw new ArgumentException("Local news must have a CountryCode");
+
+            // Business Rule — الدولي ما عنده CountryCode
+            if (scope == NewsScope.International && countryCode != null)
+                throw new ArgumentException("International news must not have a CountryCode");
+
             return new NewsArticle
             {
                 TitleEN = titleEN,
@@ -47,16 +61,18 @@ namespace BeyeCEO.Domain.News.Entities
                 ImageUrl = imageUrl,
                 Category = category,
                 Scope = scope,
-                ReadTimeMinutes = CalculateReadTime(contentEN),
-                PublishedAt = publishedAt
+                CountryCode = countryCode?.ToUpper(),
+                PublishedAt = publishedAt,
+                ReadTimeMinutes = CalculateReadTime(contentEN)
             };
         }
 
         private static int CalculateReadTime(string content)
         {
             if (string.IsNullOrWhiteSpace(content)) return 1;
-            var wordCount = content.Split(' ', StringSplitOptions.RemoveEmptyEntries).Length;
-            return Math.Max(1, wordCount / 200); // متوسط 200 كلمة/دقيقة
+            var wordCount = content.Split(' ',
+                StringSplitOptions.RemoveEmptyEntries).Length;
+            return Math.Max(1, wordCount / 200);
         }
     }
 }

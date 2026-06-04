@@ -8,10 +8,6 @@
 
   <ItemGroup>
     <Folder Include="Alerts\" />
-    <Folder Include="Auth\Entites\" />
-    <Folder Include="Auth\Interfaces\" />
-    <Folder Include="KPIs\Entites\" />
-    <Folder Include="KPIs\Interfaces\" />
   </ItemGroup>
 
 </Project>
