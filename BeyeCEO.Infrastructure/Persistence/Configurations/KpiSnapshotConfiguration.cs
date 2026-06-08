@@ -1,4 +1,5 @@
 ﻿using BeyeCEO.Domain.KPIs.Entites;
+using BeyeCEO.Domain.Shared.Enum;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 using System;
@@ -35,9 +36,9 @@ namespace BeyeCEO.Infrastructure.Persistence.Configurations
                 .HasPrecision(18, 4);
 
             builder.Property(e => e.PeriodType)
-                .HasConversion<string>()
-                .HasMaxLength(10)
-                .HasDefaultValue("Monthly");
+       .HasConversion<string>()
+       .HasMaxLength(10)
+       .HasDefaultValue(PeriodType.Monthly);
 
             builder.Property(e => e.Source)
                 .HasMaxLength(20)

@@ -1,4 +1,5 @@
 ﻿using BeyeCEO.Domain.Auth.Entites;
+using BeyeCEO.Domain.Shared.Enum;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 using System;
@@ -33,22 +34,26 @@ namespace BeyeCEO.Infrastructure.Persistence.Configurations
                 .HasDefaultValue(string.Empty);
 
             builder.Property(e => e.AuthType)
-                .HasConversion<string>()
-                .HasMaxLength(10)
-                .HasDefaultValue("Local");
+            .HasConversion<string>()
+            .HasMaxLength(10)
+            .HasDefaultValue(AuthType.Local);
 
             builder.Property(e => e.Role)
-                .HasConversion<string>()
-                .HasMaxLength(20)
-                .HasDefaultValue("CEO");
+         .HasConversion<string>()
+         .HasMaxLength(20)
+         .HasDefaultValue(UserRole.CEO);
 
             builder.Property(e => e.PreferredLanguage)
-                .HasConversion<string>()
-                .HasColumnType("CHAR(2)")
-                .HasDefaultValue("EN");
+       .HasConversion<string>()
+       .HasColumnType("CHAR(2)")
+       .HasDefaultValue(Language.EN);
 
-            builder.Property(e => e.DefaultCountryCode)
-                .HasColumnType("CHAR(2)");
+            builder.HasOne(e => e.DefaultCountry)
+          .WithMany()
+          .HasForeignKey(e => e.DefaultCountryCode)  // ← اسم الـ Property
+          .HasPrincipalKey(e => e.CountryCode)        // ← PK في Countries
+          .IsRequired(false)
+          .OnDelete(DeleteBehavior.Restrict);
 
             builder.Property(e => e.IsActive)
                 .HasDefaultValue(true);

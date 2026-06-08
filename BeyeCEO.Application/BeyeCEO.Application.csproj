@@ -12,7 +12,6 @@
 
   <ItemGroup>
     <Folder Include="KPIs\" />
-    <Folder Include="Auth\" />
     <Folder Include="MarketData\" />
     <Folder Include="Benchmarks\" />
     <Folder Include="Common\" />
@@ -20,6 +19,7 @@
 
   <ItemGroup>
     <PackageReference Include="AutoMapper" Version="16.1.1" />
+    <PackageReference Include="BCrypt.Net-Next" Version="4.2.0" />
     <PackageReference Include="FluentValidation" Version="12.1.1" />
     <PackageReference Include="MediatR" Version="14.1.0" />
   </ItemGroup>
