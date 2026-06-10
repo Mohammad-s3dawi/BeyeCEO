@@ -33,5 +33,16 @@ namespace BeyeCEO.Domain.MarketData.Interfaces
         // ── Save Local ────────────────────────────────────────
         Task SaveStockExchangeDataAsync(StockExchangeData data);
         Task SaveLocalIndicatorAsync(LocalIndicator indicator);
+
+        Task<IEnumerable<StockExchangeTopMover>> GetTopMoversAsync(
+    string countryCode, DateOnly tradeDate);
+
+        Task<IEnumerable<StockExchangeHistory>> GetStockHistoryAsync(
+            string countryCode, string periodType);
+
+        Task SaveTopMoversAsync(
+            IEnumerable<StockExchangeTopMover> movers);
+
+        Task SaveStockHistoryAsync(StockExchangeHistory history);
     }
 }

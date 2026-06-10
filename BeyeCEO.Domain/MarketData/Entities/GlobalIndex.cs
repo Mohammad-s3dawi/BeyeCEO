@@ -7,7 +7,7 @@ using System.Threading.Tasks;
 
 namespace BeyeCEO.Domain.MarketData.Entities
 {
-    public class GlobalIndex:BaseEntity
+    public class GlobalIndex : BaseEntity
     {
         public string Symbol { get; private set; } = string.Empty;
         public string Name { get; private set; } = string.Empty;
@@ -15,13 +15,19 @@ namespace BeyeCEO.Domain.MarketData.Entities
         public decimal Change { get; private set; }
         public decimal ChangePct { get; private set; }
         public string Region { get; private set; } = string.Empty;
-        public DateTime RecordedAt { get; private set; }
         public string Source { get; private set; } = string.Empty;
+        public DateTime RecordedAt { get; private set; }
+
+        // ← جديد
+        public long Volume { get; private set; }
 
         private GlobalIndex() { }
 
-        public static GlobalIndex Create(string symbol, string name, decimal value,
-            decimal change, decimal changePct, string region, string source)
+        public static GlobalIndex Create(
+            string symbol, string name, decimal value,
+            decimal change, decimal changePct,
+            string region, string source,
+            long volume = 0)
         {
             return new GlobalIndex
             {
@@ -31,8 +37,9 @@ namespace BeyeCEO.Domain.MarketData.Entities
                 Change = change,
                 ChangePct = changePct,
                 Region = region,
-                RecordedAt = DateTime.UtcNow,
-                Source = source
+                Source = source,
+                Volume = volume,
+                RecordedAt = DateTime.UtcNow
             };
         }
     }

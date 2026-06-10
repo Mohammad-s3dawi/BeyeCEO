@@ -20,17 +20,28 @@ namespace BeyeCEO.Domain.MarketData.Entities
         public string FlagUrl { get; private set; } = string.Empty;
         public bool IsActive { get; private set; } = true;
 
+        // ← جديد
+        public string StockScraperType { get; private set; } = "NONE";
+        public string CentralBankScraperType { get; private set; } = "NONE";
+        public string TimeZone { get; private set; } = "UTC";
+        public bool HasLocalData { get; private set; } = false;
+
         // Navigation
-        public ICollection<BankCountry> BankCountries { get; private set; } = new List<BankCountry>();
+        public ICollection<BankCountry> BankCountries { get; private set; }
+            = new List<BankCountry>();
 
         private Country() { }
 
-        public static Country Create(string countryCode, string nameEN, string nameAR,
+        public static Country Create(
+            string countryCode, string nameEN, string nameAR,
             string currencyCode, string currencyNameEN, string currencyNameAR,
-            string centralBank, string stockExchange, string region)
+            string centralBank, string stockExchange, string region,
+            string stockScraperType = "NONE",
+            string centralBankScraperType = "NONE",
+            string timeZone = "UTC")
         {
             if (countryCode.Length != 2)
-                throw new ArgumentException("CountryCode must be exactly 2 characters");
+                throw new ArgumentException("CountryCode must be 2 characters");
 
             return new Country
             {
@@ -43,7 +54,10 @@ namespace BeyeCEO.Domain.MarketData.Entities
                 CentralBank = centralBank,
                 StockExchange = stockExchange,
                 Region = region,
-                FlagUrl = string.Empty,
+                StockScraperType = stockScraperType,
+                CentralBankScraperType = centralBankScraperType,
+                TimeZone = timeZone,
+                HasLocalData = stockScraperType != "NONE",
                 IsActive = true
             };
         }

@@ -40,6 +40,11 @@ namespace BeyeCEO.Infrastructure.Persistence
         public DbSet<StockExchangeData> StockExchangeData => Set<StockExchangeData>();
         public DbSet<NewsArticle> NewsArticles => Set<NewsArticle>();
         public DbSet<KpiSnapshot> KpiSnapshots => Set<KpiSnapshot>();
+        public DbSet<StockExchangeTopMover> StockExchangeTopMovers
+    => Set<StockExchangeTopMover>();
+
+        public DbSet<StockExchangeHistory> StockExchangeHistories
+            => Set<StockExchangeHistory>();
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {

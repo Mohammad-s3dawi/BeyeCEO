@@ -55,6 +55,8 @@ namespace BeyeCEO.Infrastructure.Persistence.Configurations
 
             builder.HasIndex(e => new { e.Symbol, e.RecordedAt })
                 .HasFilter("[IsDeleted] = 0");
+            builder.Property(e => e.Volume)
+    .HasDefaultValue(0L);
         }
     }
 }

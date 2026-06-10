@@ -51,6 +51,20 @@ namespace BeyeCEO.Infrastructure.Persistence.Configurations
 
             builder.Property(e => e.IsActive)
                 .HasDefaultValue(true);
+            builder.Property(e => e.StockScraperType)
+    .HasMaxLength(50)
+    .HasDefaultValue("NONE");
+
+            builder.Property(e => e.CentralBankScraperType)
+                .HasMaxLength(50)
+                .HasDefaultValue("NONE");
+
+            builder.Property(e => e.TimeZone)
+                .HasMaxLength(50)
+                .HasDefaultValue("UTC");
+
+            builder.Property(e => e.HasLocalData)
+                .HasDefaultValue(false);
         }
     }
 }

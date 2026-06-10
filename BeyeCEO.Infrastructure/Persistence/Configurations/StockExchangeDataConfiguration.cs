@@ -45,6 +45,12 @@ namespace BeyeCEO.Infrastructure.Persistence.Configurations
             builder.Property(e => e.GeneralIndex)
                 .HasPrecision(10, 4)
                 .HasDefaultValue(0m);
+            builder.Property(e => e.NoOfSecurities).HasDefaultValue(0);
+            builder.Property(e => e.Gainers).HasDefaultValue(0);
+            builder.Property(e => e.Losers).HasDefaultValue(0);
+            builder.Property(e => e.Unchanged).HasDefaultValue(0);
+            builder.Property(e => e.ChangePct).HasPrecision(8, 4).HasDefaultValue(0m);
+            builder.Property(e => e.PreviousIndex).HasPrecision(10, 4).HasDefaultValue(0m);
 
             builder.Property(e => e.CreatedAt)
                 .HasDefaultValueSql("SYSUTCDATETIME()");
