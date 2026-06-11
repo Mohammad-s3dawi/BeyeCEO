@@ -12,8 +12,6 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Folder Include="ExternalServices\" />
-    <Folder Include="BackgroundJobs\" />
     <Folder Include="Persistence\Migrations\" />
   </ItemGroup>
 

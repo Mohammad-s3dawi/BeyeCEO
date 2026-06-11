@@ -44,5 +44,7 @@ namespace BeyeCEO.Domain.MarketData.Interfaces
             IEnumerable<StockExchangeTopMover> movers);
 
         Task SaveStockHistoryAsync(StockExchangeHistory history);
+        Task<IEnumerable<Country>> GetActiveCountriesAsync();
+
     }
 }

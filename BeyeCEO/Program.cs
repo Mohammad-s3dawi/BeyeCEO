@@ -2,9 +2,13 @@ using BeyeCEO.Domain.Auth.Interfaces;
 using BeyeCEO.Domain.KPIs.Interfaces;
 using BeyeCEO.Domain.MarketData.Interfaces;
 using BeyeCEO.Domain.News.Interfaces;
+using BeyeCEO.Infrastructure.BackgroundJobs;
+using BeyeCEO.Infrastructure.ExternalServices;
 using BeyeCEO.Infrastructure.Identity;
 using BeyeCEO.Infrastructure.Persistence;
 using BeyeCEO.Infrastructure.Persistence.Repositories;
+using Hangfire;
+using Hangfire.SqlServer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.OpenApi.Models;
 using Serilog;
@@ -82,7 +86,36 @@ builder.Services.AddScoped<INewsRepository, NewsRepository>();
 builder.Services.AddScoped<IKpiRepository, KpiRepository>();
 builder.Services.AddScoped<IAuthRepository, AuthRepository>();
 builder.Services.AddScoped<IJwtService, JwtService>();
+builder.Services.AddScoped<GlobalMarketsJob>();
+builder.Services.AddScoped<CommoditiesJob>();
+builder.Services.AddScoped<InterestRatesJob>();
+builder.Services.AddScoped<LocalStockExchangeJob>();
+builder.Services.AddScoped<LocalIndicatorsJob>();
+////////////////////////////////////
+builder.Services.AddHttpClient<AlphaVantageClient>();
+builder.Services.AddHttpClient<FredClient>();
+builder.Services.AddHttpClient<EiaClient>();
+// Scrapers
+builder.Services.AddHttpClient<ASEScraper>();
+builder.Services.AddHttpClient<CBJScraper>();
+///
+// ?? Hangfire ??????????????????????????????????????????????
+builder.Services.AddHangfire(config => config
+    .SetDataCompatibilityLevel(CompatibilityLevel.Version_180)
+    .UseSimpleAssemblyNameTypeSerializer()
+    .UseRecommendedSerializerSettings()
+    .UseSqlServerStorage(
+        builder.Configuration.GetConnectionString("BeyeCeoDB"),
+        new SqlServerStorageOptions
+        {
+            CommandBatchMaxTimeout = TimeSpan.FromMinutes(5),
+            SlidingInvisibilityTimeout = TimeSpan.FromMinutes(5),
+            QueuePollInterval = TimeSpan.Zero,
+            UseRecommendedIsolationLevel = true,
+            DisableGlobalLocks = true
+        }));
 
+builder.Services.AddHangfireServer();
 // ?? MediatR ???????????????????????????????????????????????
 builder.Services.AddMediatR(cfg =>
     cfg.RegisterServicesFromAssembly(
@@ -137,6 +170,36 @@ app.UseHttpsRedirection();
 app.UseCors("BeyeCEOPolicy");
 app.UseAuthentication();
 app.UseAuthorization();
+app.UseHangfireDashboard("/hangfire");
+// ?? Register Background Jobs ??????????????????????????????
+
+
+// ?? 15 ????? — Global Markets
+RecurringJob.AddOrUpdate<GlobalMarketsJob>(
+    "global-markets",
+    job => job.ExecuteAsync(),
+    "*/15 * * * *");
+
+// ?? 15 ????? — Commodities
+RecurringJob.AddOrUpdate<CommoditiesJob>(
+    "commodities",
+    job => job.ExecuteAsync(),
+    "*/15 * * * *");
+
+// ?? ???? — Interest Rates
+RecurringJob.AddOrUpdate<InterestRatesJob>(
+    "interest-rates",
+    job => job.ExecuteAsync(),
+    "0 * * * *");
+RecurringJob.AddOrUpdate<LocalStockExchangeJob>(
+    "local-stock",
+    job => job.ExecuteAsync(),
+    "0 15 * * 0-4");  // ?????? 3 PM (??? ????? ????? 1:30 PM)
+
+RecurringJob.AddOrUpdate<LocalIndicatorsJob>(
+    "local-indicators",
+    job => job.ExecuteAsync(),
+    "0 8 * * 0-4");   // ?????? 8 AM
 app.MapControllers();
 
 app.Run();

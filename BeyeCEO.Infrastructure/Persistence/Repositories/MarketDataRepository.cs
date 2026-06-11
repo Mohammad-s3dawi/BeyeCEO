@@ -18,7 +18,7 @@ namespace BeyeCEO.Infrastructure.Persistence.Repositories
             _context = context;
         }
 
-        // ── Global Indices ────────────────────────────────────
+        // ── Global ────────────────────────────────────────────
 
         public async Task<IEnumerable<GlobalIndex>> GetLatestGlobalIndicesAsync()
         {
@@ -30,8 +30,6 @@ namespace BeyeCEO.Infrastructure.Persistence.Repositories
                 .ToListAsync();
         }
 
-        // ── Currency Rates ────────────────────────────────────
-
         public async Task<IEnumerable<CurrencyRate>> GetLatestCurrencyRatesAsync()
         {
             return await _context.CurrencyRates
@@ -41,8 +39,6 @@ namespace BeyeCEO.Infrastructure.Persistence.Repositories
                 .AsNoTracking()
                 .ToListAsync();
         }
-
-        // ── Commodities ───────────────────────────────────────
 
         public async Task<IEnumerable<Commodity>> GetLatestCommoditiesAsync()
         {
@@ -54,8 +50,6 @@ namespace BeyeCEO.Infrastructure.Persistence.Repositories
                 .ToListAsync();
         }
 
-        // ── Interest Rates ────────────────────────────────────
-
         public async Task<IEnumerable<InterestRate>> GetLatestInterestRatesAsync()
         {
             return await _context.InterestRates
@@ -65,6 +59,8 @@ namespace BeyeCEO.Infrastructure.Persistence.Repositories
                 .AsNoTracking()
                 .ToListAsync();
         }
+
+        // ── Local ─────────────────────────────────────────────
 
         public async Task<IEnumerable<InterestRate>> GetInterestRatesByCountryAsync(
             string countryCode)
@@ -77,8 +73,6 @@ namespace BeyeCEO.Infrastructure.Persistence.Repositories
                 .ToListAsync();
         }
 
-        // ── Stock Exchange ────────────────────────────────────
-
         public async Task<StockExchangeData?> GetLatestStockExchangeDataAsync(
             string countryCode)
         {
@@ -88,8 +82,6 @@ namespace BeyeCEO.Infrastructure.Persistence.Repositories
                 .AsNoTracking()
                 .FirstOrDefaultAsync();
         }
-
-        // ── Local Indicators ──────────────────────────────────
 
         public async Task<IEnumerable<LocalIndicator>> GetLatestLocalIndicatorsAsync(
             string countryCode)
@@ -102,7 +94,52 @@ namespace BeyeCEO.Infrastructure.Persistence.Repositories
                 .ToListAsync();
         }
 
-        // ── Save Methods ──────────────────────────────────────
+        public async Task<IEnumerable<StockExchangeTopMover>> GetTopMoversAsync(
+            string countryCode, DateOnly tradeDate)
+        {
+            return await _context.StockExchangeTopMovers
+                .Where(x =>
+                    x.CountryCode == countryCode &&
+                    x.TradeDate == tradeDate &&
+                    !x.IsDeleted)
+                .OrderBy(x => x.MoverType)
+                .ThenBy(x => x.Rank)
+                .AsNoTracking()
+                .ToListAsync();
+        }
+
+        public async Task<IEnumerable<StockExchangeHistory>> GetStockHistoryAsync(
+            string countryCode, string periodType)
+        {
+            return await _context.StockExchangeHistories
+                .Where(x =>
+                    x.CountryCode == countryCode &&
+                    x.PeriodType == periodType &&
+                    !x.IsDeleted)
+                .OrderBy(x => x.RecordedAt)
+                .AsNoTracking()
+                .ToListAsync();
+        }
+
+        // ── Countries ─────────────────────────────────────────
+
+        public async Task<IEnumerable<Country>> GetActiveCountriesAsync()
+        {
+            return await _context.Countries
+                .Where(x => x.IsActive)
+                .AsNoTracking()
+                .ToListAsync();
+        }
+
+        public async Task<Country?> GetCountryAsync(string countryCode)
+        {
+            return await _context.Countries
+                .Where(x => x.CountryCode == countryCode && x.IsActive)
+                .AsNoTracking()
+                .FirstOrDefaultAsync();
+        }
+
+        // ── Save Global ───────────────────────────────────────
 
         public async Task SaveGlobalIndexAsync(GlobalIndex index)
         {
@@ -110,7 +147,8 @@ namespace BeyeCEO.Infrastructure.Persistence.Repositories
             await _context.SaveChangesAsync();
         }
 
-        public async Task SaveGlobalIndicesRangeAsync(IEnumerable<GlobalIndex> indices)
+        public async Task SaveGlobalIndicesRangeAsync(
+            IEnumerable<GlobalIndex> indices)
         {
             await _context.GlobalIndices.AddRangeAsync(indices);
             await _context.SaveChangesAsync();
@@ -122,7 +160,8 @@ namespace BeyeCEO.Infrastructure.Persistence.Repositories
             await _context.SaveChangesAsync();
         }
 
-        public async Task SaveCurrencyRatesRangeAsync(IEnumerable<CurrencyRate> rates)
+        public async Task SaveCurrencyRatesRangeAsync(
+            IEnumerable<CurrencyRate> rates)
         {
             await _context.CurrencyRates.AddRangeAsync(rates);
             await _context.SaveChangesAsync();
@@ -134,7 +173,8 @@ namespace BeyeCEO.Infrastructure.Persistence.Repositories
             await _context.SaveChangesAsync();
         }
 
-        public async Task SaveCommoditiesRangeAsync(IEnumerable<Commodity> commodities)
+        public async Task SaveCommoditiesRangeAsync(
+            IEnumerable<Commodity> commodities)
         {
             await _context.Commodities.AddRangeAsync(commodities);
             await _context.SaveChangesAsync();
@@ -146,9 +186,10 @@ namespace BeyeCEO.Infrastructure.Persistence.Repositories
             await _context.SaveChangesAsync();
         }
 
+        // ── Save Local ────────────────────────────────────────
+
         public async Task SaveStockExchangeDataAsync(StockExchangeData data)
         {
-            // Upsert — لو موجود لنفس البورصة ونفس اليوم
             var existing = await _context.StockExchangeData
                 .FirstOrDefaultAsync(x =>
                     x.Exchange == data.Exchange &&
@@ -163,7 +204,6 @@ namespace BeyeCEO.Infrastructure.Persistence.Repositories
 
         public async Task SaveLocalIndicatorAsync(LocalIndicator indicator)
         {
-            // Upsert — لو موجود لنفس البلد + الكود + الفترة
             var existing = await _context.LocalIndicators
                 .FirstOrDefaultAsync(x =>
                     x.CountryCode == indicator.CountryCode &&
@@ -176,5 +216,32 @@ namespace BeyeCEO.Infrastructure.Persistence.Repositories
             await _context.LocalIndicators.AddAsync(indicator);
             await _context.SaveChangesAsync();
         }
+
+        public async Task SaveTopMoversAsync(
+            IEnumerable<StockExchangeTopMover> movers)
+        {
+            // احذف القديم لنفس البورصة ونفس اليوم
+            var first = movers.FirstOrDefault();
+            if (first == null) return;
+
+            var existing = await _context.StockExchangeTopMovers
+                .Where(x =>
+                    x.Exchange == first.Exchange &&
+                    x.TradeDate == first.TradeDate)
+                .ToListAsync();
+
+            if (existing.Any())
+                _context.StockExchangeTopMovers.RemoveRange(existing);
+
+            await _context.StockExchangeTopMovers.AddRangeAsync(movers);
+            await _context.SaveChangesAsync();
+        }
+
+        public async Task SaveStockHistoryAsync(StockExchangeHistory history)
+        {
+            await _context.StockExchangeHistories.AddAsync(history);
+            await _context.SaveChangesAsync();
+        }
+      
     }
 }
