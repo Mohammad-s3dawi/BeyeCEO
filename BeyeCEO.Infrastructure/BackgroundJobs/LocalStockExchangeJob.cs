@@ -10,19 +10,20 @@ using System.Threading.Tasks;
 namespace BeyeCEO.Infrastructure.BackgroundJobs
 {
 
+
     public class LocalStockExchangeJob
     {
         private readonly IMarketDataRepository _repo;
-        private readonly ASEScraper _aseScraper;
+        private readonly ASEClient _aseClient;
         private readonly ILogger<LocalStockExchangeJob> _logger;
 
         public LocalStockExchangeJob(
             IMarketDataRepository repo,
-            ASEScraper aseScraper,
+            ASEClient aseClient,
             ILogger<LocalStockExchangeJob> logger)
         {
             _repo = repo;
-            _aseScraper = aseScraper;
+            _aseClient = aseClient;
             _logger = logger;
         }
 
@@ -33,34 +34,24 @@ namespace BeyeCEO.Infrastructure.BackgroundJobs
                 "=== LocalStockExchangeJob STARTED === {Time}",
                 DateTime.UtcNow);
 
-            // جيب الدول النشطة اللي عندها Stock Scraper
             var countries = await _repo.GetActiveCountriesAsync();
             var stockCountries = countries
                 .Where(c => c.HasLocalData &&
                             c.StockScraperType != "NONE")
                 .ToList();
 
-            _logger.LogInformation(
-                "Found {Count} countries with stock scrapers",
-                stockCountries.Count);
-
             foreach (var country in stockCountries)
             {
                 try
                 {
-                    _logger.LogInformation(
-                        "Processing {CountryCode} — {Exchange}",
-                        country.CountryCode,
-                        country.StockScraperType);
-
                     switch (country.StockScraperType)
                     {
                         case "ASE":
-                            await ProcessASEAsync(country.CountryCode);
+                            await ProcessASEAsync();
                             break;
                         default:
                             _logger.LogWarning(
-                                "No scraper for {Type}",
+                                "No client for {Type}",
                                 country.StockScraperType);
                             break;
                     }
@@ -68,7 +59,7 @@ namespace BeyeCEO.Infrastructure.BackgroundJobs
                 catch (Exception ex)
                 {
                     _logger.LogError(ex,
-                        "❌ Failed for {CountryCode}: {Message}",
+                        "❌ {CountryCode}: {Message}",
                         country.CountryCode, ex.Message);
                 }
             }
@@ -79,25 +70,22 @@ namespace BeyeCEO.Infrastructure.BackgroundJobs
                 stopwatch.ElapsedMilliseconds);
         }
 
-        private async Task ProcessASEAsync(string countryCode)
+        private async Task ProcessASEAsync()
         {
-            // جيب بيانات البورصة
-            var data = await _aseScraper.FetchAsync();
+            var data = await _aseClient.FetchMarketDataAsync();
             if (data != null)
             {
                 await _repo.SaveStockExchangeDataAsync(data);
                 _logger.LogInformation(
-                    "✅ ASE data saved for {Date}",
-                    data.TradeDate);
+                    "✅ ASE data saved");
             }
 
-            // جيب Top Movers
-            var movers = await _aseScraper.FetchTopMoversAsync();
+            var movers = await _aseClient.FetchTopMoversAsync();
             if (movers.Any())
             {
                 await _repo.SaveTopMoversAsync(movers);
                 _logger.LogInformation(
-                    "✅ {Count} top movers saved", movers.Count);
+                    "✅ {Count} movers saved", movers.Count);
             }
         }
     }

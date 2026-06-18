@@ -2,6 +2,7 @@
 using BeyeCEO.Application.Auth.Commands;
 using BeyeCEO.Application.Auth.DTOs;
 using BeyeCEO.Domain.Auth.Interfaces;
+using BeyeCEO.Infrastructure.ExternalServices;
 using BeyeCEO.Infrastructure.Identity;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
@@ -95,6 +96,47 @@ namespace BeyeCEO.API.Controllers
                         System.Security.Claims.ClaimTypes.NameIdentifier)!.Value)));
 
             return Ok(new ApiResponse<string>(true, "Logged out successfully"));
+        }
+        // GET /api/auth/test-ase
+        [HttpGet("test-ase")]
+        [AllowAnonymous]
+        public async Task<IActionResult> TestASE(
+      [FromServices] ASEClient client)
+        {
+            var data = await client.FetchMarketDataAsync();
+            var movers = await client.FetchTopMoversAsync();
+
+            return Ok(new
+            {
+                marketData = data == null ? null : new
+                {
+                    data.GeneralIndex,
+                    data.ChangePct,
+                    data.Gainers,
+                    data.Losers
+                },
+                topMovers = movers.Select(x => new {
+                    x.Symbol,
+                    x.CompanyName,
+                    x.ChangePct,
+                    x.MoverType,
+                    x.Rank
+                })
+            });
+        }
+
+        // GET /api/auth/test-cbj
+        [HttpGet("test-cbj")]
+        [AllowAnonymous]
+        public async Task<IActionResult> TestCBJ(
+            [FromServices] CBJScraper scraper)
+        {
+            var indicators = await scraper.FetchAsync();
+            return Ok(indicators.Select(x => new {
+                x.IndicatorCode,
+                x.Value,
+                x.Unit
+            }));
         }
     }
 

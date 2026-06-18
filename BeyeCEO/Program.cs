@@ -1,4 +1,4 @@
-using BeyeCEO.Domain.Auth.Interfaces;
+﻿using BeyeCEO.Domain.Auth.Interfaces;
 using BeyeCEO.Domain.KPIs.Interfaces;
 using BeyeCEO.Domain.MarketData.Interfaces;
 using BeyeCEO.Domain.News.Interfaces;
@@ -97,6 +97,7 @@ builder.Services.AddHttpClient<FredClient>();
 builder.Services.AddHttpClient<EiaClient>();
 // Scrapers
 builder.Services.AddHttpClient<ASEScraper>();
+builder.Services.AddHttpClient<ASEClient>();
 builder.Services.AddHttpClient<CBJScraper>();
 ///
 // ?? Hangfire ??????????????????????????????????????????????
@@ -174,19 +175,19 @@ app.UseHangfireDashboard("/hangfire");
 // ?? Register Background Jobs ??????????????????????????????
 
 
-// ?? 15 ????? � Global Markets
+// ?? 15 ????? — Global Markets
 RecurringJob.AddOrUpdate<GlobalMarketsJob>(
     "global-markets",
     job => job.ExecuteAsync(),
     "*/15 * * * *");
 
-// ?? 15 ????? � Commodities
+// ?? 15 ????? — Commodities
 RecurringJob.AddOrUpdate<CommoditiesJob>(
     "commodities",
     job => job.ExecuteAsync(),
     "*/15 * * * *");
 
-// ?? ???? � Interest Rates
+// ?? ???? — Interest Rates
 RecurringJob.AddOrUpdate<InterestRatesJob>(
     "interest-rates",
     job => job.ExecuteAsync(),
@@ -194,12 +195,12 @@ RecurringJob.AddOrUpdate<InterestRatesJob>(
 RecurringJob.AddOrUpdate<LocalStockExchangeJob>(
     "local-stock",
     job => job.ExecuteAsync(),
-    "0 15 * * 0-4");  // ?????? 3 PM (??? ????? ????? 1:30 PM)
+    "0 15 * * 0-4");  // يومياً 3 PM (بعد إغلاق السوق 1:30 PM)
 
 RecurringJob.AddOrUpdate<LocalIndicatorsJob>(
     "local-indicators",
     job => job.ExecuteAsync(),
-    "0 8 * * 0-4");   // ?????? 8 AM
+    "0 8 * * 0-4");   // يومياً 8 AM
 app.MapControllers();
 
 app.Run();
