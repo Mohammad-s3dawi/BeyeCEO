@@ -91,6 +91,7 @@ builder.Services.AddScoped<CommoditiesJob>();
 builder.Services.AddScoped<InterestRatesJob>();
 builder.Services.AddScoped<LocalStockExchangeJob>();
 builder.Services.AddScoped<LocalIndicatorsJob>();
+builder.Services.AddScoped<NewsJob>();
 ////////////////////////////////////
 builder.Services.AddHttpClient<AlphaVantageClient>();
 builder.Services.AddHttpClient<FredClient>();
@@ -99,6 +100,8 @@ builder.Services.AddHttpClient<EiaClient>();
 builder.Services.AddHttpClient<ASEScraper>();
 builder.Services.AddHttpClient<ASEClient>();
 builder.Services.AddHttpClient<CBJScraper>();
+builder.Services.AddHttpClient<GuardianClient>();
+builder.Services.AddHttpClient<NewsApiClient>();
 ///
 // ?? Hangfire ??????????????????????????????????????????????
 builder.Services.AddHangfire(config => config
@@ -201,6 +204,10 @@ RecurringJob.AddOrUpdate<LocalIndicatorsJob>(
     "local-indicators",
     job => job.ExecuteAsync(),
     "0 8 * * 0-4");   // يومياً 8 AM
+RecurringJob.AddOrUpdate<NewsJob>(
+    "news",
+    job => job.ExecuteAsync(),
+    "0 */6 * * *");
 app.MapControllers();
 
 app.Run();

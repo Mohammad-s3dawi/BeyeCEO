@@ -34,6 +34,7 @@ namespace BeyeCEO.API.Controllers
         {
             try
             {
+                
                 var result = await _mediator.Send(
                     new LoginCommand(request.Email, request.Password, request.DeviceInfo));
 
@@ -136,6 +137,33 @@ namespace BeyeCEO.API.Controllers
                 x.IndicatorCode,
                 x.Value,
                 x.Unit
+            }));
+        }
+        [HttpGet("test-news-international")]
+        [AllowAnonymous]
+        public async Task<IActionResult> TestNewsInt(
+    [FromServices] GuardianClient client)
+        {
+            var articles = await client.FetchInternationalNewsAsync(2);
+            return Ok(articles.Select(x => new {
+                x.TitleEN,
+                x.Category,
+                x.SourceName
+            }));
+        }
+
+        [HttpGet("test-news-local/{countryCode}")]
+        [AllowAnonymous]
+        public async Task<IActionResult> TestNewsLocal(
+     string countryCode,
+     [FromServices] GuardianClient client)  // ← Guardian بدل NewsApi
+        {
+            var articles = await client.FetchLocalNewsAsync(countryCode, 2);
+            return Ok(articles.Select(x => new {
+                x.TitleEN,
+                x.Category,
+                x.CountryCode,
+                x.SourceName
             }));
         }
     }
