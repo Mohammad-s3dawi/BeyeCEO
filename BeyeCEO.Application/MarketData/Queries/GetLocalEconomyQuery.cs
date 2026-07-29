@@ -40,6 +40,10 @@ namespace BeyeCEO.Application.MarketData.Queries
 
             var stock =  stockTask;
 
+            var topMovers = stock == null
+                ? []
+                : await _repo.GetTopMoversAsync(countryCode, stock.TradeDate);
+
             return new LocalEconomyDto
             {
                 CountryCode = countryCode,
@@ -53,7 +57,22 @@ namespace BeyeCEO.Application.MarketData.Queries
                     Transactions = stock.Transactions,
                     BankingIndex = stock.BankingIndex,
                     GeneralIndex = stock.GeneralIndex,
-                    TradeDate = stock.TradeDate
+                    TradeDate = stock.TradeDate,
+                    NoOfSecurities = stock.NoOfSecurities,
+                    Gainers = stock.Gainers,
+                    Losers = stock.Losers,
+                    Unchanged = stock.Unchanged,
+                    ChangePct = stock.ChangePct,
+                    PreviousIndex = stock.PreviousIndex,
+                    TopMovers = topMovers.Select(m => new TopMoverDto
+                    {
+                        CompanyName = m.CompanyName,
+                        Symbol = m.Symbol,
+                        Price = m.Price,
+                        ChangePct = m.ChangePct,
+                        MoverType = m.MoverType,
+                        Rank = m.Rank
+                    })
                 },
 
                 Indicators = ( indicatorsTask).Select(x => new LocalIndicatorDto

@@ -16,6 +16,7 @@ namespace BeyeCEO.Infrastructure.BackgroundJobs
         private readonly IMarketDataRepository _marketRepo;
         private readonly GuardianClient _guardian;
         private readonly NewsApiClient _newsApi;
+        private readonly RssNewsClient _rssNews;
         private readonly ILogger<NewsJob> _logger;
 
         public NewsJob(
@@ -23,12 +24,14 @@ namespace BeyeCEO.Infrastructure.BackgroundJobs
             IMarketDataRepository marketRepo,
             GuardianClient guardian,
             NewsApiClient newsApi,
+            RssNewsClient rssNews,
             ILogger<NewsJob> logger)
         {
             _newsRepo = newsRepo;
             _marketRepo = marketRepo;
             _guardian = guardian;
             _newsApi = newsApi;
+            _rssNews = rssNews;
             _logger = logger;
         }
 
@@ -83,9 +86,18 @@ namespace BeyeCEO.Infrastructure.BackgroundJobs
             {
                 try
                 {
-                    // ← Guardian بدل NewsApi
-                    var articles = await _guardian
+                    var articles = await _newsApi
                         .FetchLocalNewsAsync(country.CountryCode, pageSize: 5);
+
+                    if (articles.Count == 0 && _rssNews.HasFeeds(country.CountryCode))
+                    {
+                        _logger.LogInformation(
+                            "NewsApi: 0 results for {CountryCode}, trying RSS",
+                            country.CountryCode);
+
+                        articles = await _rssNews
+                            .FetchLocalNewsAsync(country.CountryCode);
+                    }
 
                     if (articles.Any())
                     {

@@ -46,5 +46,10 @@ namespace BeyeCEO.Domain.MarketData.Interfaces
         Task SaveStockHistoryAsync(StockExchangeHistory history);
         Task<IEnumerable<Country>> GetActiveCountriesAsync();
 
+        // ── Circulars ─────────────────────────────────────────
+        Task SaveCircularAsync(CentralBankCircular circular);
+
+        Task<(IEnumerable<CentralBankCircular> Items, int Total)> GetCircularsAsync(
+            string countryCode, int page, int pageSize);
     }
 }

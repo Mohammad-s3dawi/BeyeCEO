@@ -46,6 +46,9 @@ namespace BeyeCEO.Infrastructure.Persistence
         public DbSet<StockExchangeHistory> StockExchangeHistories
             => Set<StockExchangeHistory>();
 
+        public DbSet<CentralBankCircular> CentralBankCirculars
+            => Set<CentralBankCircular>();
+
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             // تطبيق كل الـ Configurations أوتوماتيك

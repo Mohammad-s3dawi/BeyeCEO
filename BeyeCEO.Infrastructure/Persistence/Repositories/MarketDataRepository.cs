@@ -242,6 +242,37 @@ namespace BeyeCEO.Infrastructure.Persistence.Repositories
             await _context.StockExchangeHistories.AddAsync(history);
             await _context.SaveChangesAsync();
         }
-      
+
+        // ── Circulars ─────────────────────────────────────────
+
+        public async Task SaveCircularAsync(CentralBankCircular circular)
+        {
+            var existing = await _context.CentralBankCirculars
+                .FirstOrDefaultAsync(x => x.PdfUrl == circular.PdfUrl);
+
+            if (existing != null)
+                _context.CentralBankCirculars.Remove(existing);
+
+            await _context.CentralBankCirculars.AddAsync(circular);
+            await _context.SaveChangesAsync();
+        }
+
+        public async Task<(IEnumerable<CentralBankCircular> Items, int Total)> GetCircularsAsync(
+            string countryCode, int page, int pageSize)
+        {
+            var query = _context.CentralBankCirculars
+                .Where(x => x.CountryCode == countryCode && !x.IsDeleted)
+                .OrderByDescending(x => x.CircularDate);
+
+            var total = await query.CountAsync();
+
+            var items = await query
+                .Skip((page - 1) * pageSize)
+                .Take(pageSize)
+                .AsNoTracking()
+                .ToListAsync();
+
+            return (items, total);
+        }
     }
 }

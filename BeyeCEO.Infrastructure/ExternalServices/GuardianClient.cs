@@ -25,6 +25,11 @@ namespace BeyeCEO.Infrastructure.ExternalServices
         "economics", "financial-sector"
         ];
 
+        // Keywords لأخبار بنكية مهمة للـ CEO
+        private const string InternationalKeywords =
+            "central bank OR interest rate OR banking regulation OR " +
+            "financial crisis OR IMF OR World Bank OR Basel";
+
         public GuardianClient(
             HttpClient http,
             IConfiguration config,
@@ -46,7 +51,8 @@ namespace BeyeCEO.Infrastructure.ExternalServices
                 foreach (var section in Sections)
                 {
                     var url = $"{_baseUrl}/search" +
-                              $"?section={section}" +
+                              $"?q={Uri.EscapeDataString(InternationalKeywords)}" +
+                              $"&section={section}" +
                               $"&show-fields=headline,bodyText,thumbnail,trailText" +
                               $"&page-size={pageSize}" +
                               $"&order-by=newest" +

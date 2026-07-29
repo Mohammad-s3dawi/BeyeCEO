@@ -92,7 +92,20 @@ namespace BeyeCEO.Infrastructure.Persistence.Repositories
 
         public async Task SaveRangeAsync(IEnumerable<NewsArticle> articles)
         {
-            await _context.NewsArticles.AddRangeAsync(articles);
+            var urls = articles.Select(a => a.SourceUrl).ToList();
+
+            var existingUrls = await _context.NewsArticles
+                .Where(a => urls.Contains(a.SourceUrl))
+                .Select(a => a.SourceUrl)
+                .ToListAsync();
+
+            var newArticles = articles
+                .Where(a => !existingUrls.Contains(a.SourceUrl))
+                .ToList();
+
+            if (newArticles.Count == 0) return;
+
+            await _context.NewsArticles.AddRangeAsync(newArticles);
             await _context.SaveChangesAsync();
         }
     }

@@ -20,8 +20,9 @@ namespace BeyeCEO.Infrastructure.ExternalServices
 
         // Keywords للأخبار البنكية والاقتصادية
         private const string BankingKeywords =
-            "bank OR banking OR finance OR economy OR " +
-            "interest rate OR inflation OR GDP OR investment";
+            "central bank OR interest rate OR inflation OR GDP OR " +
+            "banking sector OR financial results OR merger OR acquisition OR " +
+            "regulatory OR Basel OR capital adequacy";
 
         // Map البلد → اللغة + الـ Query
         private static readonly Dictionary<string,
@@ -38,6 +39,20 @@ namespace BeyeCEO.Infrastructure.ExternalServices
                 ["US"] = ("en", "us"),
             };
 
+        // Map البلد → مصادر بنكية/مالية موثوقة (للـ /everything fallback)
+        private static readonly Dictionary<string, string> CountryDomains = new()
+        {
+            ["JO"] = "reuters.com,ft.com,arabnews.com",
+            ["SA"] = "arabnews.com,reuters.com",
+            ["AE"] = "thenationalnews.com,gulfnews.com,reuters.com",
+            ["EG"] = "egyptindependent.com,reuters.com",
+            ["KW"] = "arabtimesonline.com,reuters.com",
+            ["BH"] = "reuters.com,arabnews.com",
+            ["QA"] = "gulf-times.com,reuters.com",
+            ["GB"] = "ft.com,reuters.com,bbc.co.uk",
+            ["US"] = "reuters.com,bloomberg.com",
+        };
+
         public NewsApiClient(
             HttpClient http,
             IConfiguration config,
@@ -52,26 +67,58 @@ namespace BeyeCEO.Infrastructure.ExternalServices
         public async Task<List<NewsArticle>> FetchLocalNewsAsync(
          string countryCode, int pageSize = 10)
         {
-            var articles = new List<NewsArticle>();
-
             if (!CountryMap.TryGetValue(
                 countryCode.ToUpper(), out var countryInfo))
             {
                 _logger.LogWarning(
                     "NewsApi: No mapping for {CountryCode}", countryCode);
-                return articles;
+                return new List<NewsArticle>();
             }
+
+            // ← top-headlines بدل everything
+            var url = $"{_baseUrl}/top-headlines" +
+                      $"?country={countryInfo.Country}" +
+                      $"&category=business" +
+                      $"&pageSize={pageSize}" +
+                      $"&apiKey={_apiKey}";
+
+            var articles = await FetchAndParseAsync(url, countryCode);
+
+            if (articles.Count == 0)
+            {
+                _logger.LogInformation(
+                    "NewsApi: 0 top-headlines for {Country}, falling back to /everything",
+                    countryCode);
+
+                var domains = CountryDomains[countryCode.ToUpper()];
+                var fallbackUrl = $"{_baseUrl}/everything" +
+                                  $"?domains={Uri.EscapeDataString(domains)}" +
+                                  $"&sortBy=publishedAt" +
+                                  $"&pageSize={pageSize}" +
+                                  $"&apiKey={_apiKey}";
+
+                articles = await FetchAndParseAsync(fallbackUrl, countryCode);
+            }
+
+            return articles;
+        }
+
+        private async Task<List<NewsArticle>> FetchAndParseAsync(
+            string url, string countryCode)
+        {
+            var articles = new List<NewsArticle>();
 
             try
             {
-                // ← top-headlines بدل everything
-                var url = $"{_baseUrl}/top-headlines" +
-                          $"?country={countryInfo.Country}" +
-                          $"&category=business" +
-                          $"&pageSize={pageSize}" +
-                          $"&apiKey={_apiKey}";
-
-                var response = await _http.GetStringAsync(url);
+                var httpResponse = await _http.GetAsync(url);
+                if (!httpResponse.IsSuccessStatusCode)
+                {
+                    var errorBody = await httpResponse.Content.ReadAsStringAsync();
+                    _logger.LogError("NewsApi: HTTP {Status} for {Country}. Body: {Body}",
+                        (int)httpResponse.StatusCode, countryCode, errorBody);
+                    return articles;
+                }
+                var response = await httpResponse.Content.ReadAsStringAsync();
                 var json = JsonDocument.Parse(response);
 
                 var status = json.RootElement

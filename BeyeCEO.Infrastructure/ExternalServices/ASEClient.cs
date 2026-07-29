@@ -6,6 +6,7 @@ using System.Linq;
 using System.Text;
 using System.Text.Json;
 using System.Text.Json.Serialization;
+using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 
 namespace BeyeCEO.Infrastructure.ExternalServices
@@ -21,6 +22,9 @@ namespace BeyeCEO.Infrastructure.ExternalServices
 
         private const string TickerFeedsUrl =
             "https://www.ase.com.jo/en/ticker_feeds";
+
+        private const string DailySummaryUrl =
+            "https://www.ase.com.jo/en/daily_summary";
 
         public ASEClient(HttpClient http, ILogger<ASEClient> logger)
         {
@@ -67,17 +71,21 @@ namespace BeyeCEO.Infrastructure.ExternalServices
                 if (DateTime.TryParse(item.Date, out var parsedDate))
                     tradeDate = DateOnly.FromDateTime(parsedDate);
 
+                // جيب التداول الكلي (قيمة، حجم، عدد صفقات) من الملخص اليومي
+                var summary = await FetchDailySummaryAsync();
+
                 var data = StockExchangeData.Create(
                     countryCode: "JO",
                     exchange: "ASE",
-                    tradingAmount: 0,       // محتاج API ثانية
-                    tradingVolume: 0,       // محتاج API ثانية
-                    transactions: 0,        // محتاج API ثانية
+                    tradingAmount: summary?.TradingAmount * 1_000_000 ?? 0,
+                    tradingVolume: (long)((summary?.TradingVolume ?? 0) * 1_000_000),
+                    transactions: summary?.Transactions ?? 0,
                     bankingIndex: index,
                     generalIndex: index,
                     tradeDate: tradeDate,
-                    gainers: gainers,
-                    losers: losers,
+                    noOfSecurities: summary?.NoOfSecurities ?? 0,
+                    gainers: summary?.Gainers ?? gainers,
+                    losers: summary?.Losers ?? losers,
                     unchanged: unchanged,
                     changePct: changePct,
                     previousIndex: index / (1 + changePct / 100));
@@ -85,7 +93,7 @@ namespace BeyeCEO.Infrastructure.ExternalServices
                 _logger.LogInformation(
                     "ASEClient: ✅ Index={Index} ChangePct={ChangePct}% " +
                     "Gainers={Gainers} Losers={Losers}",
-                    index, changePct, gainers, losers);
+                    index, changePct, data.Gainers, data.Losers);
 
                 return data;
             }
@@ -172,6 +180,89 @@ namespace BeyeCEO.Infrastructure.ExternalServices
             return JsonSerializer.Deserialize<List<ASETicker>>(response)
                 ?? new List<ASETicker>();
         }
+
+        public async Task<DailySummary?> FetchDailySummaryAsync()
+        {
+            try
+            {
+                _logger.LogInformation(
+                    "ASEClient: Fetching daily summary");
+
+                var html = await _http.GetStringAsync(DailySummaryUrl);
+                var text = StripHtml(html);
+
+                var tradingAmount = ExtractDecimal(
+                    text, @"reached JD\(?([\d.]+)\)? million");
+                var tradingVolume = ExtractDecimal(
+                    text, @"([\d.]+)\)? million shares were traded");
+                var transactions = ExtractInt(
+                    text, @"traded through \(?([\d,]+)\)?");
+                var noOfSecurities = ExtractInt(
+                    text, @"shares of \(?([\d]+)\)? companies were traded");
+                var gainers = ExtractInt(
+                    text, @"prices of \(?([\d]+)\)? companies rose");
+                var losers = ExtractInt(
+                    text, @"prices of \(?([\d]+)\)? declined");
+
+                var summary = new DailySummary
+                {
+                    TradingAmount = tradingAmount,
+                    TradingVolume = tradingVolume,
+                    Transactions = transactions,
+                    NoOfSecurities = noOfSecurities,
+                    Gainers = gainers,
+                    Losers = losers
+                };
+
+                _logger.LogInformation(
+                    "ASEClient: ✅ DailySummary Amount={Amount}M Volume={Volume}M " +
+                    "Transactions={Transactions} Securities={Securities} " +
+                    "Gainers={Gainers} Losers={Losers}",
+                    summary.TradingAmount, summary.TradingVolume,
+                    summary.Transactions, summary.NoOfSecurities,
+                    summary.Gainers, summary.Losers);
+
+                return summary;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex,
+                    "ASEClient DailySummary: ❌ {Message}", ex.Message);
+                return null;
+            }
+        }
+
+        private static decimal ExtractDecimal(string text, string pattern)
+        {
+            var match = Regex.Match(text, pattern);
+            return match.Success &&
+                decimal.TryParse(match.Groups[1].Value, out var value)
+                ? value : 0;
+        }
+
+        private static int ExtractInt(string text, string pattern)
+        {
+            var match = Regex.Match(text, pattern);
+            return match.Success &&
+                int.TryParse(
+                    match.Groups[1].Value.Replace(",", string.Empty),
+                    out var value)
+                ? value : 0;
+        }
+
+        private static string StripHtml(string html) =>
+            Regex.Replace(html, "<.*?>", " ");
+    }
+
+    // ── Daily Summary ────────────────────────────────────────
+    public class DailySummary
+    {
+        public decimal TradingAmount { get; set; }   // JD, millions
+        public decimal TradingVolume { get; set; }   // shares, millions
+        public int Transactions { get; set; }
+        public int NoOfSecurities { get; set; }
+        public int Gainers { get; set; }
+        public int Losers { get; set; }
     }
 
     // ── Response Models ───────────────────────────────────────

@@ -92,6 +92,8 @@ builder.Services.AddScoped<InterestRatesJob>();
 builder.Services.AddScoped<LocalStockExchangeJob>();
 builder.Services.AddScoped<LocalIndicatorsJob>();
 builder.Services.AddScoped<NewsJob>();
+builder.Services.AddScoped<CbjCircularsJob>();
+builder.Services.AddScoped<CBJCircularsScraper>();
 ////////////////////////////////////
 builder.Services.AddHttpClient<AlphaVantageClient>();
 builder.Services.AddHttpClient<FredClient>();
@@ -101,7 +103,11 @@ builder.Services.AddHttpClient<ASEScraper>();
 builder.Services.AddHttpClient<ASEClient>();
 builder.Services.AddHttpClient<CBJScraper>();
 builder.Services.AddHttpClient<GuardianClient>();
-builder.Services.AddHttpClient<NewsApiClient>();
+builder.Services.AddHttpClient<NewsApiClient>(c =>
+    c.DefaultRequestHeaders.Add("User-Agent", "BeyeCEO/1.0"));
+builder.Services.AddHttpClient<RssNewsClient>(c =>
+    c.DefaultRequestHeaders.Add("User-Agent", "BeyeCEO/1.0"));
+builder.Services.AddHttpClient<TranslationService>();
 ///
 // ?? Hangfire ??????????????????????????????????????????????
 builder.Services.AddHangfire(config => config
@@ -208,6 +214,10 @@ RecurringJob.AddOrUpdate<NewsJob>(
     "news",
     job => job.ExecuteAsync(),
     "0 */6 * * *");
+RecurringJob.AddOrUpdate<CbjCircularsJob>(
+    "cbj-circulars",
+    job => job.ExecuteAsync(),
+    "0 9 * * *");
 app.MapControllers();
 
 app.Run();
