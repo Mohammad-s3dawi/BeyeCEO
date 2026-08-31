@@ -15,6 +15,10 @@ namespace BeyeCEO.Domain.MarketData.Entities
         public string WebsiteUrl { get; private set; } = string.Empty;
         public bool IsActive { get; private set; } = true;
 
+        public bool HasBeyeSystem { get; private set; }
+        public string? BeyeApiUrl { get; private set; }
+        public string? BeyeApiKey { get; private set; }
+
         // Navigation
         public ICollection<BankCountry> BankCountries { get; private set; } = new List<BankCountry>();
 
@@ -47,6 +51,14 @@ namespace BeyeCEO.Domain.MarketData.Entities
         public void Deactivate()
         {
             IsActive = false;
+            MarkAsUpdated();
+        }
+
+        public void EnableBeyeSystem(string apiUrl, string apiKey)
+        {
+            HasBeyeSystem = true;
+            BeyeApiUrl = apiUrl;
+            BeyeApiKey = apiKey;
             MarkAsUpdated();
         }
     }

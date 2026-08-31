@@ -14,18 +14,18 @@ namespace BeyeCEO.Infrastructure.BackgroundJobs
     {
         private readonly IMarketDataRepository _repo;
         private readonly EiaClient _eia;
-        private readonly AlphaVantageClient _alphaVantage;
+        private readonly MetalsClient _metals;
         private readonly ILogger<CommoditiesJob> _logger;
 
         public CommoditiesJob(
             IMarketDataRepository repo,
             EiaClient eia,
-            AlphaVantageClient alphaVantage,
+            MetalsClient metals,
             ILogger<CommoditiesJob> logger)
         {
             _repo = repo;
             _eia = eia;
-            _alphaVantage = alphaVantage;
+            _metals = metals;
             _logger = logger;
         }
 
@@ -109,19 +109,17 @@ namespace BeyeCEO.Infrastructure.BackgroundJobs
 
             try
             {
-                var gold = await _alphaVantage
-                    .GetGlobalQuoteAsync("GLD");
+                var price = await _metals.GetGoldPriceAsync();
 
-                if (gold != null)
+                if (price.HasValue)
                 {
                     await _repo.SaveCommodityAsync(
                         Commodity.Create(
-                            "GOLD", "Gold", gold.Price,
-                            "USD", gold.ChangePct, "AlphaVantage"));
+                            "GOLD", "Gold", price.Value,
+                            "USD", 0, "gold-api.com"));
 
                     _logger.LogInformation(
-                        "✅ Gold = ${Price} | Change: {ChangePct}%",
-                        gold.Price, gold.ChangePct);
+                        "✅ Gold = ${Price}", price.Value);
                 }
                 else
                 {

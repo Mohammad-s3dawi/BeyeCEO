@@ -28,7 +28,7 @@ namespace BeyeCEO.Infrastructure.BackgroundJobs
                 ],
                 ["GB"] =
                 [
-                    ("BOEBPOLICYR", "BOE Policy Rate"),
+                    ("IUDSOIA", "SONIA (BOE Proxy Rate)"),
                 ]
             };
 
@@ -108,6 +108,38 @@ namespace BeyeCEO.Infrastructure.BackgroundJobs
                             seriesId, ex.Message);
                     }
                 }
+            }
+
+            // 4. ECB — مش مرتبطة بدولة محددة، منجيبها لحالها بعد اللوب
+            try
+            {
+                var ecbObs = await _fred.GetLatestAsync("ECBDFR");
+                if (ecbObs == null)
+                {
+                    _logger.LogWarning("No data for ECBDFR");
+                    failed++;
+                }
+                else
+                {
+                    var ecbRate = InterestRate.Create(
+                        "ECB",
+                        "EU",
+                        "Deposit Facility Rate",
+                        ecbObs.Value,
+                        ecbObs.Date);
+
+                    await _repo.SaveInterestRateAsync(ecbRate);
+                    success++;
+
+                    _logger.LogInformation(
+                        "✅ EU Deposit Facility Rate = {Value}%", ecbObs.Value);
+                }
+            }
+            catch (Exception ex)
+            {
+                failed++;
+                _logger.LogError(ex,
+                    "❌ Failed ECBDFR: {Message}", ex.Message);
             }
 
             stopwatch.Stop();

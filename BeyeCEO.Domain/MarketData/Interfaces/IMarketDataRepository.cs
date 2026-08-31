@@ -1,4 +1,5 @@
-﻿using BeyeCEO.Domain.MarketData.Entities;
+﻿using BeyeCEO.Domain.KPIs.Entites;
+using BeyeCEO.Domain.MarketData.Entities;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -51,5 +52,18 @@ namespace BeyeCEO.Domain.MarketData.Interfaces
 
         Task<(IEnumerable<CentralBankCircular> Items, int Total)> GetCircularsAsync(
             string countryCode, int page, int pageSize);
+
+        // ── Bank Ads ──────────────────────────────────────────
+        Task SaveBankAdAsync(BankAd ad);
+        Task<IEnumerable<BankAd>> GetBankAdsAsync(string countryCode);
+
+        // ── Bank Performance Metrics ──────────────────────────
+        Task SaveBankPerformanceAsync(
+            List<BankPerformanceMetric> metrics, Guid bankId, string section);
+
+        Task<List<BankPerformanceMetric>> GetBankPerformanceAsync(
+            Guid bankId, string section);
+
+        Task<IEnumerable<Bank>> GetBeyeEnabledBanksAsync();
     }
 }

@@ -20,14 +20,23 @@ namespace BeyeCEO.Infrastructure.BackgroundJobs
         // Indices — عالمية ثابتة
         private static readonly List<(string Symbol, string Name, string Region)> Indices =
         [
-            ("SPY",  "S&P 500",       "US"),
-        ("QQQ",  "Nasdaq 100",    "US"),
-        ("DIA",  "Dow Jones",     "US"),
-        ("EWG",  "DAX Germany",   "EU"),
-        ("EWU",  "FTSE 100",      "EU"),
-        ("EWJ",  "Nikkei Japan",  "ASIA"),
-        ("FXI",  "Hang Seng",     "ASIA"),
-    ];
+            ("SPY",  "S&P 500",        "US"),
+            ("QQQ",  "Nasdaq 100",     "US"),
+            ("DIA",  "Dow Jones",      "US"),
+            ("IWM",  "Russell 2000",   "US"),
+            ("EWG",  "DAX Germany",    "EU"),
+            ("EWU",  "FTSE 100",       "EU"),
+            ("EWQ",  "CAC 40 France",  "EU"),
+            ("EWI",  "FTSE MIB Italy", "EU"),
+            ("EWP",  "IBEX 35 Spain",  "EU"),
+            ("EWJ",  "Nikkei Japan",   "ASIA"),
+            ("FXI",  "Hang Seng",      "ASIA"),
+            ("EWY",  "KOSPI Korea",    "ASIA"),
+            ("EWA",  "ASX Australia",  "ASIA"),
+            ("MCHI", "CSI 300 China",  "CHINA"),
+            ("KWEB", "China Tech",     "CHINA"),
+            ("KSA",  "Saudi Tadawul",  "MENA"),
+        ];
 
         public GlobalMarketsJob(
             IMarketDataRepository repo,
@@ -49,7 +58,6 @@ namespace BeyeCEO.Infrastructure.BackgroundJobs
             try
             {
                 await FetchIndicesAsync();
-                await FetchCurrenciesAsync();
 
                 stopwatch.Stop();
                 _logger.LogInformation(
@@ -114,69 +122,5 @@ namespace BeyeCEO.Infrastructure.BackgroundJobs
                 success, failed);
         }
 
-        private async Task FetchCurrenciesAsync()
-        {
-            // جيب الأزواج بشكل Dynamic من الدول النشطة
-            var countries = await _repo.GetActiveCountriesAsync();
-
-            // ← بناء الأزواج من عملات الدول النشطة
-            var pairs = countries
-                .Where(c => c.CurrencyCode != "USD")
-                .Select(c => (From: "USD", To: c.CurrencyCode))
-                .ToList();
-
-            // أضف أزواج إضافية مهمة
-            pairs.Add(("EUR", "USD"));
-            pairs.Add(("GBP", "USD"));
-            pairs.Add(("USD", "JPY"));
-            pairs.Add(("USD", "CHF"));
-
-            // ازل التكرار
-            pairs = pairs.DistinctBy(p => $"{p.From}{p.To}").ToList();
-
-            _logger.LogInformation(
-                "--- Fetching {Count} currency pairs ---", pairs.Count);
-
-            int success = 0, failed = 0;
-
-            foreach (var (from, to) in pairs)
-            {
-                try
-                {
-                    var rate = await _alphaVantage
-                        .GetExchangeRateAsync(from, to);
-
-                    if (rate == 0)
-                    {
-                        _logger.LogWarning(
-                            "Rate = 0 for {From}/{To}", from, to);
-                        failed++;
-                        continue;
-                    }
-
-                    var currencyRate = CurrencyRate.Create(
-                        from, to, rate, "AlphaVantage");
-
-                    await _repo.SaveCurrencyRateAsync(currencyRate);
-                    success++;
-
-                    _logger.LogInformation(
-                        "✅ {From}/{To} = {Rate}", from, to, rate);
-
-                    await Task.Delay(TimeSpan.FromSeconds(12));
-                }
-                catch (Exception ex)
-                {
-                    failed++;
-                    _logger.LogError(ex,
-                        "❌ {From}/{To}: {Message}",
-                        from, to, ex.Message);
-                }
-            }
-
-            _logger.LogInformation(
-                "--- Currencies: {Success} ✅ {Failed} ❌ ---",
-                success, failed);
-        }
     }
 }

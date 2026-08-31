@@ -94,10 +94,24 @@ builder.Services.AddScoped<LocalIndicatorsJob>();
 builder.Services.AddScoped<NewsJob>();
 builder.Services.AddScoped<CbjCircularsJob>();
 builder.Services.AddScoped<CBJCircularsScraper>();
+builder.Services.AddScoped<CurrencyRatesJob>();
+builder.Services.AddScoped<BankAdsScraper>();
+builder.Services.AddScoped<BankAdsJob>();
+builder.Services.AddScoped<BankPerformanceJob>();
 ////////////////////////////////////
 builder.Services.AddHttpClient<AlphaVantageClient>();
 builder.Services.AddHttpClient<FredClient>();
 builder.Services.AddHttpClient<EiaClient>();
+builder.Services.AddHttpClient<ExchangeRateClient>();
+builder.Services.AddHttpClient<MetalsClient>();
+builder.Services.AddHttpClient<BeyePerformanceClient>(c =>
+    c.DefaultRequestHeaders.Add("User-Agent", "BeyeCEO/1.0"))
+    .ConfigurePrimaryHttpMessageHandler(() => new HttpClientHandler
+    {
+        // ⚠️ بيقبل أي شهادة SSL — Beye على بورت غير قياسي وشهادة مش موثوقة غالباً (بيئة تطوير فقط)
+        ServerCertificateCustomValidationCallback =
+            HttpClientHandler.DangerousAcceptAnyServerCertificateValidator
+    });
 // Scrapers
 builder.Services.AddHttpClient<ASEScraper>();
 builder.Services.AddHttpClient<ASEClient>();
@@ -184,17 +198,23 @@ app.UseHangfireDashboard("/hangfire");
 // ?? Register Background Jobs ??????????????????????????????
 
 
-// ?? 15 ????? — Global Markets
+// 1x/day — Global Markets (AlphaVantage quota: 25/day, 16 symbols x 1 = 16)
 RecurringJob.AddOrUpdate<GlobalMarketsJob>(
     "global-markets",
     job => job.ExecuteAsync(),
-    "*/15 * * * *");
+    "0 8 * * *");
 
-// ?? 15 ????? — Commodities
+// 3x/day — Commodities
 RecurringJob.AddOrUpdate<CommoditiesJob>(
     "commodities",
     job => job.ExecuteAsync(),
-    "*/15 * * * *");
+    "0 8,14,20 * * *");
+
+// Every 4h — Currency Rates (free API, no quota limit)
+RecurringJob.AddOrUpdate<CurrencyRatesJob>(
+    "currency-rates",
+    job => job.ExecuteAsync(),
+    "0 */4 * * *");
 
 // ?? ???? — Interest Rates
 RecurringJob.AddOrUpdate<InterestRatesJob>(
@@ -218,6 +238,14 @@ RecurringJob.AddOrUpdate<CbjCircularsJob>(
     "cbj-circulars",
     job => job.ExecuteAsync(),
     "0 9 * * *");
+RecurringJob.AddOrUpdate<BankAdsJob>(
+    "bank-ads",
+    job => job.ExecuteAsync(),
+    "0 10 * * *");
+RecurringJob.AddOrUpdate<BankPerformanceJob>(
+    "bank-performance",
+    job => job.ExecuteAsync(),
+    "0 3 * * *");
 app.MapControllers();
 
 app.Run();

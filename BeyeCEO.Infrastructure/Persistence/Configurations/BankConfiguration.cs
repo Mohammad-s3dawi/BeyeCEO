@@ -39,6 +39,15 @@ namespace BeyeCEO.Infrastructure.Persistence.Configurations
             builder.Property(e => e.IsActive)
                 .HasDefaultValue(true);
 
+            builder.Property(e => e.HasBeyeSystem)
+                .HasDefaultValue(false);
+
+            builder.Property(e => e.BeyeApiUrl)
+                .HasMaxLength(500);
+
+            builder.Property(e => e.BeyeApiKey)
+                .HasMaxLength(500);
+
             builder.Property(e => e.CreatedAt)
                 .HasDefaultValueSql("SYSUTCDATETIME()");
 

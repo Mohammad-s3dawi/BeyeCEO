@@ -49,6 +49,12 @@ namespace BeyeCEO.Infrastructure.Persistence
         public DbSet<CentralBankCircular> CentralBankCirculars
             => Set<CentralBankCircular>();
 
+        public DbSet<BankAd> BankAds
+            => Set<BankAd>();
+
+        public DbSet<BankPerformanceMetric> BankPerformanceMetrics
+            => Set<BankPerformanceMetric>();
+
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             // تطبيق كل الـ Configurations أوتوماتيك
