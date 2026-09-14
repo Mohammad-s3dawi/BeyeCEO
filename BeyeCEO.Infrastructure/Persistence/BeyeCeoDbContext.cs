@@ -55,6 +55,9 @@ namespace BeyeCEO.Infrastructure.Persistence
         public DbSet<BankPerformanceMetric> BankPerformanceMetrics
             => Set<BankPerformanceMetric>();
 
+        public DbSet<BeyeView> BeyeViews
+            => Set<BeyeView>();
+
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             // تطبيق كل الـ Configurations أوتوماتيك

@@ -33,41 +33,66 @@ namespace BeyeCEO.Infrastructure.BackgroundJobs
 
             foreach (var bank in banks)
             {
-                try
+                if (string.IsNullOrWhiteSpace(bank.BeyeApiUrl))
                 {
-                    if (string.IsNullOrWhiteSpace(bank.BeyeApiUrl))
-                    {
-                        _logger.LogWarning(
-                            "⚠️ {Bank}: HasBeyeSystem=true but BeyeApiUrl is empty — skipping",
-                            bank.NameEN);
-                        failed++;
-                        continue;
-                    }
+                    _logger.LogWarning(
+                        "⚠️ {Bank}: HasBeyeSystem=true but BeyeApiUrl is empty — skipping",
+                        bank.NameEN);
+                    failed++;
+                    continue;
+                }
 
-                    var results = await _beye.FetchBSAsync(
-                        bank.Id, bank.BeyeApiUrl, bank.BeyeApiKey ?? string.Empty);
+                var views = await _repo.GetBeyeViewsForBankAsync(bank.Id);
 
-                    if (results.Count > 0)
+                if (views.Count == 0)
+                {
+                    _logger.LogWarning(
+                        "⚠️ {Bank}: no active BeyeViews configured — skipping", bank.NameEN);
+                    failed++;
+                    continue;
+                }
+
+                foreach (var view in views)
+                {
+                    try
                     {
-                        await _repo.SaveBankPerformanceAsync(results, bank.Id, "BS");
+                        var raw = await _beye.FetchViewDataAsync(
+                            bank.BeyeApiUrl, view.ViewId, bank.BeyeApiKey ?? string.Empty);
+
+                        if (raw.Count == 0)
+                        {
+                            _logger.LogWarning(
+                                "⚠️ {Bank} / {Section} (viewId {ViewId}): 0 KPIs returned",
+                                bank.NameEN, view.Section, view.ViewId);
+                            failed++;
+                            continue;
+                        }
+
+                        var metrics = _beye.MapToMetrics(raw, bank.Id, view.Section);
+
+                        if (metrics.Count == 0)
+                        {
+                            _logger.LogWarning(
+                                "⚠️ {Bank} / {Section} (viewId {ViewId}): 0 KPIs mapped from {Raw} raw items",
+                                bank.NameEN, view.Section, view.ViewId, raw.Count);
+                            failed++;
+                            continue;
+                        }
+
+                        await _repo.SaveBankPerformanceAsync(metrics, bank.Id, view.Section);
                         success++;
 
                         _logger.LogInformation(
-                            "✅ {Bank}: {Count} B/S metrics saved",
-                            bank.NameEN, results.Count);
+                            "✅ {Bank} / {Section} (viewId {ViewId}): {Count} metrics saved",
+                            bank.NameEN, view.Section, view.ViewId, metrics.Count);
                     }
-                    else
+                    catch (Exception ex)
                     {
-                        _logger.LogWarning(
-                            "⚠️ {Bank}: 0 B/S metrics returned", bank.NameEN);
                         failed++;
+                        _logger.LogError(ex,
+                            "❌ {Bank} / {Section} (viewId {ViewId}): {Message}",
+                            bank.NameEN, view.Section, view.ViewId, ex.Message);
                     }
-                }
-                catch (Exception ex)
-                {
-                    failed++;
-                    _logger.LogError(ex,
-                        "❌ {Bank}: {Message}", bank.NameEN, ex.Message);
                 }
             }
 

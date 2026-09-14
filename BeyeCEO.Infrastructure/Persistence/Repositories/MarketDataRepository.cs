@@ -356,7 +356,16 @@ namespace BeyeCEO.Infrastructure.Persistence.Repositories
         public async Task<IEnumerable<Bank>> GetBeyeEnabledBanksAsync()
         {
             return await _context.Banks
-                .Where(x => x.IsActive && x.HasBeyeSystem)
+                .Where(x => x.IsActive && x.HasBeyeSystem && !x.IsDeleted)
+                .AsNoTracking()
+                .ToListAsync();
+        }
+
+        public async Task<List<BeyeView>> GetBeyeViewsForBankAsync(Guid bankId)
+        {
+            return await _context.BeyeViews
+                .Where(x => x.BankId == bankId && x.IsActive && !x.IsDeleted)
+                .OrderBy(x => x.SortOrder)
                 .AsNoTracking()
                 .ToListAsync();
         }

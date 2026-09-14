@@ -51,6 +51,9 @@ namespace BeyeCEO.Infrastructure.Persistence.Configurations
             builder.Property(e => e.CreatedAt)
                 .HasDefaultValueSql("SYSUTCDATETIME()");
 
+            builder.Property(e => e.IsDeleted)
+                .HasDefaultValue(false);
+
             // علاقة One-to-Many مع BankCountries
             builder.HasMany(e => e.BankCountries)
                 .WithOne(e => e.Bank)
