@@ -58,6 +58,9 @@ namespace BeyeCEO.Infrastructure.Persistence
         public DbSet<BeyeView> BeyeViews
             => Set<BeyeView>();
 
+        public DbSet<BankWebsite> BankWebsites
+            => Set<BankWebsite>();
+
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             // تطبيق كل الـ Configurations أوتوماتيك

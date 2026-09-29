@@ -67,5 +67,7 @@ namespace BeyeCEO.Domain.MarketData.Interfaces
         Task<IEnumerable<Bank>> GetBeyeEnabledBanksAsync();
 
         Task<List<BeyeView>> GetBeyeViewsForBankAsync(Guid bankId);
+
+        Task<List<BankWebsite>> GetActiveBankWebsitesAsync(string countryCode);
     }
 }

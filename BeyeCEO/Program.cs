@@ -33,7 +33,7 @@ builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen(options =>
 {
     options.SwaggerDoc("v1", new OpenApiInfo { Title = "API", Version = "v1" });
-   
+
 
 
     options.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
@@ -64,7 +64,7 @@ builder.Services.AddSwaggerGen(options =>
             new List<string>()
           }
         });
-    
+
 });
 // ?? Database ??????????????????????????????????????????????
 builder.Services.AddDbContext<BeyeCeoDbContext>(options =>
@@ -145,16 +145,18 @@ builder.Services.AddMediatR(cfg =>
     cfg.RegisterServicesFromAssembly(
         typeof(BeyeCEO.Application.AssemblyReference).Assembly));
 // ?? CORS ??????????????????????????????????????????????????
+var allowedOrigins = builder.Configuration
+    .GetSection("Cors:AllowedOrigins")
+    .Get<string[]>() ?? [];
+
 builder.Services.AddCors(options =>
 {
-    options.AddPolicy("BeyeCEOPolicy", policy =>
+    options.AddPolicy("AllowFrontend", policy =>
     {
         policy
-            .WithOrigins(
-                builder.Configuration.GetSection("AllowedOrigins")
-                    .Get<string[]>() ?? Array.Empty<string>())
-            .AllowAnyHeader()
+            .WithOrigins(allowedOrigins)
             .AllowAnyMethod()
+            .AllowAnyHeader()
             .AllowCredentials();
     });
 });
@@ -183,7 +185,7 @@ builder.Services.AddAuthorization();
 var app = builder.Build();
 
 // Configure the HTTP request pipeline.
-if (app.Environment.IsDevelopment())
+if (app.Environment.IsDevelopment() || app.Environment.IsStaging())
 {
     app.UseSwagger();
     app.UseSwaggerUI();
@@ -191,7 +193,7 @@ if (app.Environment.IsDevelopment())
 
 app.UseSerilogRequestLogging();
 app.UseHttpsRedirection();
-app.UseCors("BeyeCEOPolicy");
+app.UseCors("AllowFrontend");
 app.UseAuthentication();
 app.UseAuthorization();
 app.UseHangfireDashboard("/hangfire");

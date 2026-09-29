@@ -3,7 +3,6 @@ using BeyeCEO.Application.MarketData.DTOs;
 using BeyeCEO.Application.MarketData.Queries;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 
 namespace BeyeCEO.API.Controllers

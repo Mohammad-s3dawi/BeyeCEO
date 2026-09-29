@@ -369,5 +369,14 @@ namespace BeyeCEO.Infrastructure.Persistence.Repositories
                 .AsNoTracking()
                 .ToListAsync();
         }
+
+        public async Task<List<BankWebsite>> GetActiveBankWebsitesAsync(string countryCode)
+        {
+            return await _context.BankWebsites
+                .Where(x => x.CountryCode == countryCode && x.IsActive && !x.IsDeleted)
+                .OrderBy(x => x.BankName)
+                .AsNoTracking()
+                .ToListAsync();
+        }
     }
 }

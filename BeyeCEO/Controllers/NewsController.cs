@@ -5,7 +5,6 @@ using BeyeCEO.Domain.News.Interfaces;
 using BeyeCEO.Infrastructure.ExternalServices;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 
 namespace BeyeCEO.API.Controllers

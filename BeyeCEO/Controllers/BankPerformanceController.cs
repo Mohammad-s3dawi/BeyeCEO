@@ -4,7 +4,6 @@ using BeyeCEO.Application.MarketData.Queries;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using System;
 
 namespace BeyeCEO.API.Controllers
 {

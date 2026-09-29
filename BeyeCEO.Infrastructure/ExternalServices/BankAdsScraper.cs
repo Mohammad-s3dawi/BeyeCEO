@@ -1,4 +1,5 @@
 using BeyeCEO.Domain.MarketData.Entities;
+using BeyeCEO.Domain.MarketData.Interfaces;
 using HtmlAgilityPack;
 using Microsoft.Extensions.Logging;
 using System;
@@ -10,42 +11,36 @@ namespace BeyeCEO.Infrastructure.ExternalServices
 {
     public class BankAdsScraper
     {
+        private readonly IMarketDataRepository _repo;
         private readonly ILogger<BankAdsScraper> _logger;
 
         private static readonly string[] Keywords =
             ["banner", "offer", "promo", "campaign"];
 
-        private static readonly List<(string Name, string NameAR, string Url, string Strategy)> Banks =
-        [
-            ("Arab Bank", "البنك العربي", "https://www.arabbank.jo", "keyword"),
-            ("Housing Bank", "بنك الإسكان", "https://hbtf.com/en", "class:desktop-banner"),
-            ("Jordan Ahli Bank", "البنك الأهلي الأردني", "https://ahli.com", "wordpress"),
-            ("Bank al Etihad", "بنك الاتحاد", "https://www.bankaletihad.com", "hero"),
-            ("Jordan Kuwait Bank", "بنك الكويت الأردني", "https://www.jkb.com", "class:desktop-banner"),
-        ];
-
-        public BankAdsScraper(ILogger<BankAdsScraper> logger)
+        public BankAdsScraper(IMarketDataRepository repo, ILogger<BankAdsScraper> logger)
         {
+            _repo = repo;
             _logger = logger;
         }
 
-        public async Task<List<BankAd>> FetchAllAsync()
+        public async Task<List<BankAd>> FetchAllAsync(string countryCode)
         {
             var allAds = new List<BankAd>();
+            var websites = await _repo.GetActiveBankWebsitesAsync(countryCode);
 
-            foreach (var bank in Banks)
+            foreach (var bank in websites)
             {
                 try
                 {
                     var ads = await FetchBankAsync(
-                        bank.Name, bank.NameAR, bank.Url, bank.Strategy);
+                        bank.BankName, bank.BankNameAR, bank.WebsiteUrl, bank.ScrapingStrategy);
                     allAds.AddRange(ads);
                 }
                 catch (Exception ex)
                 {
                     _logger.LogError(ex,
                         "BankAdsScraper: ❌ {Bank}: {Message}",
-                        bank.Name, ex.Message);
+                        bank.BankName, ex.Message);
                 }
             }
 

@@ -28,28 +28,38 @@ namespace BeyeCEO.Infrastructure.BackgroundJobs
             _logger.LogInformation(
                 "=== BankAdsJob STARTED === {Time}", DateTime.UtcNow);
 
-            try
-            {
-                var ads = await _scraper.FetchAllAsync();
+            var countries = await _repo.GetActiveCountriesAsync();
+            int total = 0;
 
-                foreach (var ad in ads)
+            foreach (var country in countries)
+            {
+                try
                 {
-                    await _repo.SaveBankAdAsync(ad);
-                }
+                    var ads = await _scraper.FetchAllAsync(country.CountryCode);
 
-                _logger.LogInformation(
-                    "✅ BankAds: {Count} processed", ads.Count);
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex,
-                    "❌ BankAdsJob: {Message}", ex.Message);
+                    foreach (var ad in ads)
+                    {
+                        await _repo.SaveBankAdAsync(ad);
+                    }
+
+                    total += ads.Count;
+
+                    _logger.LogInformation(
+                        "✅ BankAds/{Country}: {Count} processed",
+                        country.CountryCode, ads.Count);
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogError(ex,
+                        "❌ BankAdsJob/{Country}: {Message}",
+                        country.CountryCode, ex.Message);
+                }
             }
 
             stopwatch.Stop();
             _logger.LogInformation(
-                "=== BankAdsJob COMPLETED === {Duration}ms",
-                stopwatch.ElapsedMilliseconds);
+                "=== BankAdsJob COMPLETED === {Total} total, {Duration}ms",
+                total, stopwatch.ElapsedMilliseconds);
         }
     }
 }

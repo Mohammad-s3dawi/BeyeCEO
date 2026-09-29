@@ -3,10 +3,8 @@ using BeyeCEO.Application.Auth.Commands;
 using BeyeCEO.Application.Auth.DTOs;
 using BeyeCEO.Domain.Auth.Interfaces;
 using BeyeCEO.Infrastructure.ExternalServices;
-using BeyeCEO.Infrastructure.Identity;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 
 namespace BeyeCEO.API.Controllers
@@ -34,7 +32,7 @@ namespace BeyeCEO.API.Controllers
         {
             try
             {
-                
+
                 var result = await _mediator.Send(
                     new LoginCommand(request.Email, request.Password, request.DeviceInfo));
 
@@ -116,7 +114,8 @@ namespace BeyeCEO.API.Controllers
                     data.Gainers,
                     data.Losers
                 },
-                topMovers = movers.Select(x => new {
+                topMovers = movers.Select(x => new
+                {
                     x.Symbol,
                     x.CompanyName,
                     x.ChangePct,
@@ -133,7 +132,8 @@ namespace BeyeCEO.API.Controllers
             [FromServices] CBJScraper scraper)
         {
             var indicators = await scraper.FetchAsync();
-            return Ok(indicators.Select(x => new {
+            return Ok(indicators.Select(x => new
+            {
                 x.IndicatorCode,
                 x.Value,
                 x.Unit
@@ -145,7 +145,8 @@ namespace BeyeCEO.API.Controllers
     [FromServices] GuardianClient client)
         {
             var articles = await client.FetchInternationalNewsAsync(2);
-            return Ok(articles.Select(x => new {
+            return Ok(articles.Select(x => new
+            {
                 x.TitleEN,
                 x.Category,
                 x.SourceName
@@ -159,7 +160,8 @@ namespace BeyeCEO.API.Controllers
      [FromServices] GuardianClient client)  // ← Guardian بدل NewsApi
         {
             var articles = await client.FetchLocalNewsAsync(countryCode, 2);
-            return Ok(articles.Select(x => new {
+            return Ok(articles.Select(x => new
+            {
                 x.TitleEN,
                 x.Category,
                 x.CountryCode,
