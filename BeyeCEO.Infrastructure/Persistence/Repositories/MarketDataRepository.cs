@@ -378,5 +378,28 @@ namespace BeyeCEO.Infrastructure.Persistence.Repositories
                 .AsNoTracking()
                 .ToListAsync();
         }
+
+        // ── News source aggregation ───────────────────────────
+        public async Task<IEnumerable<(string NameEN, string NameAR)>> GetBankNamesByCountryAsync(string countryCode)
+        {
+            var rows = await _context.BankCountries
+                .Where(bc => bc.CountryCode == countryCode && bc.IsActive && !bc.IsDeleted)
+                .Include(bc => bc.Bank)
+                .AsNoTracking()
+                .ToListAsync();
+
+            var names = new List<(string NameEN, string NameAR)>();
+
+            foreach (var bc in rows)
+            {
+                if (bc.Bank != null)
+                    names.Add((bc.Bank.NameEN, bc.Bank.NameAR));
+
+                if (!string.IsNullOrWhiteSpace(bc.LocalBankNameEN) || !string.IsNullOrWhiteSpace(bc.LocalBankNameAR))
+                    names.Add((bc.LocalBankNameEN, bc.LocalBankNameAR));
+            }
+
+            return names;
+        }
     }
 }

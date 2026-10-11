@@ -1,6 +1,7 @@
 ﻿using BeyeCEO.Domain.MarketData.Interfaces;
 using BeyeCEO.Domain.News.Interfaces;
 using BeyeCEO.Infrastructure.ExternalServices;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using System;
 using System.Collections.Generic;
@@ -17,6 +18,7 @@ namespace BeyeCEO.Infrastructure.BackgroundJobs
         private readonly GuardianClient _guardian;
         private readonly NewsApiClient _newsApi;
         private readonly RssNewsClient _rssNews;
+        private readonly IConfiguration _config;
         private readonly ILogger<NewsJob> _logger;
 
         public NewsJob(
@@ -25,6 +27,7 @@ namespace BeyeCEO.Infrastructure.BackgroundJobs
             GuardianClient guardian,
             NewsApiClient newsApi,
             RssNewsClient rssNews,
+            IConfiguration config,
             ILogger<NewsJob> logger)
         {
             _newsRepo = newsRepo;
@@ -32,6 +35,7 @@ namespace BeyeCEO.Infrastructure.BackgroundJobs
             _guardian = guardian;
             _newsApi = newsApi;
             _rssNews = rssNews;
+            _config = config;
             _logger = logger;
         }
 
@@ -52,6 +56,13 @@ namespace BeyeCEO.Infrastructure.BackgroundJobs
 
         private async Task FetchInternationalNewsAsync()
         {
+            if (!_config.GetValue("ExternalApis:Guardian:Enabled", true))
+            {
+                _logger.LogInformation(
+                    "Guardian disabled via config (ExternalApis:Guardian:Enabled=false); skipping international fetch");
+                return;
+            }
+
             _logger.LogInformation(
                 "--- Fetching International News ---");
 
@@ -77,6 +88,15 @@ namespace BeyeCEO.Infrastructure.BackgroundJobs
 
         private async Task FetchLocalNewsAsync()
         {
+            if (!_config.GetValue("News:NewsApi:Enabled", false))
+            {
+                _logger.LogInformation(
+                    "NewsApi disabled via config (News:NewsApi:Enabled=false); skipping local fetch. " +
+                    "The verified free feeds in News:Feeds are available via POST /api/admin/news/dry-run " +
+                    "but are not yet wired into the save path.");
+                return;
+            }
+
             _logger.LogInformation(
                 "--- Fetching Local News ---");
 

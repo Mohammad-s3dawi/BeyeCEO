@@ -5,6 +5,7 @@ using BeyeCEO.Domain.News.Interfaces;
 using BeyeCEO.Infrastructure.BackgroundJobs;
 using BeyeCEO.Infrastructure.ExternalServices;
 using BeyeCEO.Infrastructure.Identity;
+using BeyeCEO.Infrastructure.NewsAggregation;
 using BeyeCEO.Infrastructure.Persistence;
 using BeyeCEO.Infrastructure.Persistence.Repositories;
 using Hangfire;
@@ -122,6 +123,18 @@ builder.Services.AddHttpClient<NewsApiClient>(c =>
 builder.Services.AddHttpClient<RssNewsClient>(c =>
     c.DefaultRequestHeaders.Add("User-Agent", "BeyeCEO/1.0"));
 builder.Services.AddHttpClient<TranslationService>();
+// News source aggregation (config-driven feeds — see News:Feeds, News:Storage:Enabled)
+builder.Services.AddSingleton<BankingKeywordFilter>();
+builder.Services.AddSingleton<SourcesHealthTracker>();
+builder.Services.AddHttpClient<FeedFetcherService>(c =>
+{
+    c.Timeout = TimeSpan.FromSeconds(15);
+    c.DefaultRequestHeaders.Add("User-Agent",
+        "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36");
+});
+builder.Services.AddScoped<NewsPipelineRunner>();
+builder.Services.AddScoped<NewsFeedJobs>();
+builder.Services.AddScoped<OldRowsClassificationService>();
 ///
 // ?? Hangfire ??????????????????????????????????????????????
 builder.Services.AddHangfire(config => config
@@ -232,10 +245,20 @@ RecurringJob.AddOrUpdate<LocalIndicatorsJob>(
     "local-indicators",
     job => job.ExecuteAsync(),
     "0 8 * * 0-4");   // يومياً 8 AM
-RecurringJob.AddOrUpdate<NewsJob>(
-    "news",
-    job => job.ExecuteAsync(),
-    "0 */6 * * *");
+// Replaced by news-local-rss / news-international below.
+RecurringJob.RemoveIfExists("news");
+
+// Every 30 min — local JO RSS/Atom feeds (high publish frequency)
+RecurringJob.AddOrUpdate<NewsFeedJobs>(
+    "news-local-rss",
+    job => job.RunLocalRssAsync(),
+    "*/30 * * * *");
+
+// Every 2h — international feeds (BoE/BIS/Fed/ECB/trade press) + Guardian
+RecurringJob.AddOrUpdate<NewsFeedJobs>(
+    "news-international",
+    job => job.RunInternationalAsync(),
+    "0 */2 * * *");
 RecurringJob.AddOrUpdate<CbjCircularsJob>(
     "cbj-circulars",
     job => job.ExecuteAsync(),
@@ -248,6 +271,22 @@ RecurringJob.AddOrUpdate<BankPerformanceJob>(
     "bank-performance",
     job => job.ExecuteAsync(),
     "0 3 * * *");
+
+// ?? News sources enabled at startup ?????????????????????????
+{
+    var newsApiEnabled = builder.Configuration.GetValue("News:NewsApi:Enabled", false);
+    var guardianEnabled = builder.Configuration.GetValue("ExternalApis:Guardian:Enabled", true);
+    var enabledFeedNames = (builder.Configuration.GetSection("News:Feeds").Get<List<FeedOptions>>() ?? [])
+        .Where(f => f.Enabled)
+        .Select(f => f.Name)
+        .ToList();
+
+    Log.Information(
+        "News sources enabled at startup: NewsApiClient={NewsApiEnabled}, Guardian={GuardianEnabled}, " +
+        "ConfigFeeds=[{FeedCount}] {FeedNames}",
+        newsApiEnabled, guardianEnabled, enabledFeedNames.Count, string.Join(", ", enabledFeedNames));
+}
+
 app.MapControllers();
 
 app.Run();

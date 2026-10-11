@@ -26,6 +26,16 @@ namespace BeyeCEO.Domain.News.Entities
         public int ReadTimeMinutes { get; private set; }
         public DateTime PublishedAt { get; private set; }
 
+        // News pipeline (feed-config aggregation) — all optional/nullable so
+        // existing callers (Guardian/NewsApi) keep compiling unchanged.
+        public string? SummaryEN { get; private set; }
+        public string? SummaryAR { get; private set; }
+        public string? OriginalLanguage { get; private set; }   // "ar" | "en"
+        public string TranslationStatus { get; private set; } = "NotRequested"; // Done|Pending|NotRequested
+        public bool IsBankingRelated { get; private set; } = true;
+        public bool IsOfficialSource { get; private set; }
+        public string? FeedName { get; private set; }
+
         // Navigation ← جديد
         public Country? Country { get; private set; }           // ← nullable لأن الدولية ما عندها
 
@@ -38,7 +48,14 @@ namespace BeyeCEO.Domain.News.Entities
             string sourceLogoUrl, string sourceUrl,
             string imageUrl, string category,
             NewsScope scope, DateTime publishedAt,
-            string? countryCode = null)             // ← null للأخبار الدولية
+            string? countryCode = null,              // ← null للأخبار الدولية
+            string? summaryEN = null,
+            string? summaryAR = null,
+            string? originalLanguage = null,
+            string translationStatus = "NotRequested",
+            bool isBankingRelated = true,
+            bool isOfficialSource = false,
+            string? feedName = null)
         {
             // Business Rule — المحلي لازم عنده CountryCode
             if (scope == NewsScope.Local && string.IsNullOrWhiteSpace(countryCode))
@@ -63,7 +80,14 @@ namespace BeyeCEO.Domain.News.Entities
                 Scope = scope,
                 CountryCode = countryCode?.ToUpper(),
                 PublishedAt = publishedAt,
-                ReadTimeMinutes = CalculateReadTime(contentEN)
+                ReadTimeMinutes = CalculateReadTime(contentEN),
+                SummaryEN = summaryEN,
+                SummaryAR = summaryAR,
+                OriginalLanguage = originalLanguage,
+                TranslationStatus = translationStatus,
+                IsBankingRelated = isBankingRelated,
+                IsOfficialSource = isOfficialSource,
+                FeedName = feedName
             };
         }
 

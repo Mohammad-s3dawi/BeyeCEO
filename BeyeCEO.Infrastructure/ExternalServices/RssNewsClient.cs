@@ -31,7 +31,8 @@ namespace BeyeCEO.Infrastructure.ExternalServices
             ["JO"] =
             [
                 "https://en.ammonnews.net/rss.php?type=news&id=2", // English
-                "https://jo24.net/feed/rss.php"                     // Arabic
+                // jo24.net/feed/rss.php removed — feed has returned HTTP 404
+                // since ~2026-09-28 (site rebuilt, old RSS path gone).
             ],
         };
 

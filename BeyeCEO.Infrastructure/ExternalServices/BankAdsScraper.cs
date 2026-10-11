@@ -33,7 +33,7 @@ namespace BeyeCEO.Infrastructure.ExternalServices
                 try
                 {
                     var ads = await FetchBankAsync(
-                        bank.BankName, bank.BankNameAR, bank.WebsiteUrl, bank.ScrapingStrategy);
+                        bank.BankName, bank.BankNameAR ?? string.Empty, bank.WebsiteUrl, bank.ScrapingStrategy);
                     allAds.AddRange(ads);
                 }
                 catch (Exception ex)

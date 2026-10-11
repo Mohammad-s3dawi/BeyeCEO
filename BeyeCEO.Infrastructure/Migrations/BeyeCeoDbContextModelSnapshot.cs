@@ -167,9 +167,6 @@ namespace BeyeCEO.Infrastructure.Migrations
                     b.Property<string>("DefaultCountryCode")
                         .HasColumnType("CHAR(2)");
 
-                    b.Property<string>("DefaultCountryCountryCode")
-                        .HasColumnType("CHAR(2)");
-
                     b.Property<string>("Email")
                         .IsRequired()
                         .HasMaxLength(200)
@@ -225,12 +222,222 @@ namespace BeyeCEO.Infrastructure.Migrations
                     b.HasIndex("BankId")
                         .HasFilter("[IsActive] = 1");
 
-                    b.HasIndex("DefaultCountryCountryCode");
+                    b.HasIndex("DefaultCountryCode");
 
                     b.HasIndex("Email")
                         .IsUnique();
 
                     b.ToTable("Users", "auth");
+                });
+
+            modelBuilder.Entity("BeyeCEO.Domain.KPIs.Entites.BankPerformanceMetric", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateOnly>("AsOfDate")
+                        .HasColumnType("date");
+
+                    b.Property<Guid>("BankId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("BudgetYTDIcon")
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)");
+
+                    b.Property<decimal?>("BudgetYTDPct")
+                        .HasPrecision(10, 4)
+                        .HasColumnType("decimal(10,4)");
+
+                    b.Property<decimal?>("CurrentValue")
+                        .HasPrecision(20, 4)
+                        .HasColumnType("decimal(20,4)");
+
+                    b.Property<string>("GroupName")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<string>("GrowthMTDIcon")
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)");
+
+                    b.Property<decimal?>("GrowthMTDPct")
+                        .HasPrecision(10, 4)
+                        .HasColumnType("decimal(10,4)");
+
+                    b.Property<decimal?>("GrowthMTDValue")
+                        .HasPrecision(20, 4)
+                        .HasColumnType("decimal(20,4)");
+
+                    b.Property<string>("GrowthYTDIcon")
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)");
+
+                    b.Property<decimal?>("GrowthYTDPct")
+                        .HasPrecision(10, 4)
+                        .HasColumnType("decimal(10,4)");
+
+                    b.Property<decimal?>("GrowthYTDValue")
+                        .HasPrecision(20, 4)
+                        .HasColumnType("decimal(20,4)");
+
+                    b.Property<bool>("IsDeleted")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bit")
+                        .HasDefaultValue(false);
+
+                    b.Property<string>("KpiAlias")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<string>("KpiName")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<string>("KpiType")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)");
+
+                    b.Property<DateTime>("RecordedAt")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("datetime2")
+                        .HasDefaultValueSql("GETUTCDATE()");
+
+                    b.Property<string>("Section")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)");
+
+                    b.Property<int>("SortOrder")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int")
+                        .HasDefaultValue(0);
+
+                    b.Property<string>("Source")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)");
+
+                    b.Property<string>("TrendData")
+                        .HasColumnType("NVARCHAR(MAX)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("BankId", "Section", "AsOfDate")
+                        .HasDatabaseName("IX_BankPerf_Bank_Section");
+
+                    b.ToTable("BankPerformanceMetrics", "data");
+                });
+
+            modelBuilder.Entity("BeyeCEO.Domain.KPIs.Entites.BankWebsite", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid?>("BankId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("BankName")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<string>("BankNameAR")
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<string>("CountryCode")
+                        .IsRequired()
+                        .ValueGeneratedOnAdd()
+                        .HasMaxLength(5)
+                        .HasColumnType("nvarchar(5)")
+                        .HasDefaultValue("JO");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("datetime2")
+                        .HasDefaultValueSql("GETUTCDATE()");
+
+                    b.Property<bool>("IsActive")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bit")
+                        .HasDefaultValue(true);
+
+                    b.Property<bool>("IsDeleted")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bit")
+                        .HasDefaultValue(false);
+
+                    b.Property<string>("ScrapingStrategy")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<string>("WebsiteUrl")
+                        .IsRequired()
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CountryCode", "IsActive")
+                        .HasDatabaseName("IX_BankWebsites_Country");
+
+                    b.ToTable("BankWebsites", "config");
+                });
+
+            modelBuilder.Entity("BeyeCEO.Domain.KPIs.Entites.BeyeView", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid>("BankId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("datetime2")
+                        .HasDefaultValueSql("GETUTCDATE()");
+
+                    b.Property<bool>("IsActive")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bit")
+                        .HasDefaultValue(true);
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("bit");
+
+                    b.Property<string>("Section")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)");
+
+                    b.Property<int>("SortOrder")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int")
+                        .HasDefaultValue(0);
+
+                    b.Property<int>("ViewId")
+                        .HasColumnType("int");
+
+                    b.Property<string>("ViewKeyName")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("BankId", "IsActive")
+                        .HasDatabaseName("IX_BeyeViews_Bank");
+
+                    b.ToTable("BeyeViews", "config");
                 });
 
             modelBuilder.Entity("BeyeCEO.Domain.KPIs.Entites.KpiDefinition", b =>
@@ -419,10 +626,23 @@ namespace BeyeCEO.Infrastructure.Migrations
                         .HasColumnType("uniqueidentifier")
                         .HasDefaultValueSql("NEWSEQUENTIALID()");
 
+                    b.Property<string>("BeyeApiKey")
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
+                    b.Property<string>("BeyeApiUrl")
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
                     b.Property<DateTime>("CreatedAt")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("datetime2")
                         .HasDefaultValueSql("SYSUTCDATETIME()");
+
+                    b.Property<bool>("HasBeyeSystem")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bit")
+                        .HasDefaultValue(false);
 
                     b.Property<bool>("IsActive")
                         .ValueGeneratedOnAdd()
@@ -430,7 +650,9 @@ namespace BeyeCEO.Infrastructure.Migrations
                         .HasDefaultValue(true);
 
                     b.Property<bool>("IsDeleted")
-                        .HasColumnType("bit");
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bit")
+                        .HasDefaultValue(false);
 
                     b.Property<string>("LogoUrl")
                         .IsRequired()
@@ -466,6 +688,62 @@ namespace BeyeCEO.Infrastructure.Migrations
                     b.ToTable("Banks", "config");
                 });
 
+            modelBuilder.Entity("BeyeCEO.Domain.MarketData.Entities.BankAd", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("AltText")
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
+                    b.Property<string>("BankName")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<string>("BankNameAR")
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<string>("CountryCode")
+                        .IsRequired()
+                        .HasMaxLength(5)
+                        .HasColumnType("nvarchar(5)");
+
+                    b.Property<string>("ImageUrl")
+                        .IsRequired()
+                        .HasMaxLength(1000)
+                        .HasColumnType("nvarchar(1000)");
+
+                    b.Property<bool>("IsActive")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bit")
+                        .HasDefaultValue(true);
+
+                    b.Property<bool>("IsDeleted")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bit")
+                        .HasDefaultValue(false);
+
+                    b.Property<DateTime>("ScrapedAt")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("datetime2")
+                        .HasDefaultValueSql("GETUTCDATE()");
+
+                    b.Property<string>("SourceUrl")
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CountryCode")
+                        .HasDatabaseName("IX_BankAds_Country");
+
+                    b.ToTable("BankAds", "data");
+                });
+
             modelBuilder.Entity("BeyeCEO.Domain.MarketData.Entities.BankCountry", b =>
                 {
                     b.Property<Guid>("Id")
@@ -478,9 +756,6 @@ namespace BeyeCEO.Infrastructure.Migrations
 
                     b.Property<string>("CountryCode")
                         .IsRequired()
-                        .HasColumnType("CHAR(2)");
-
-                    b.Property<string>("CountryCode1")
                         .HasColumnType("CHAR(2)");
 
                     b.Property<DateTime>("CreatedAt")
@@ -525,12 +800,62 @@ namespace BeyeCEO.Infrastructure.Migrations
 
                     b.HasIndex("CountryCode");
 
-                    b.HasIndex("CountryCode1");
-
                     b.HasIndex("BankId", "CountryCode")
                         .IsUnique();
 
                     b.ToTable("BankCountries", "config");
+                });
+
+            modelBuilder.Entity("BeyeCEO.Domain.MarketData.Entities.CentralBankCircular", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateOnly?>("CircularDate")
+                        .HasColumnType("date");
+
+                    b.Property<string>("CircularNumber")
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<string>("CountryCode")
+                        .IsRequired()
+                        .HasMaxLength(5)
+                        .HasColumnType("nvarchar(5)");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("datetime2")
+                        .HasDefaultValueSql("GETUTCDATE()");
+
+                    b.Property<string>("FileSize")
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)");
+
+                    b.Property<bool>("IsDeleted")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bit")
+                        .HasDefaultValue(false);
+
+                    b.Property<string>("PdfUrl")
+                        .HasMaxLength(1000)
+                        .HasColumnType("nvarchar(1000)");
+
+                    b.Property<string>("TitleAR")
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
+                    b.Property<string>("TitleEN")
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CountryCode")
+                        .HasDatabaseName("IX_Circulars_Country");
+
+                    b.ToTable("CentralBankCirculars", "data");
                 });
 
             modelBuilder.Entity("BeyeCEO.Domain.MarketData.Entities.Commodity", b =>
@@ -606,6 +931,13 @@ namespace BeyeCEO.Infrastructure.Migrations
                         .HasMaxLength(100)
                         .HasColumnType("nvarchar(100)");
 
+                    b.Property<string>("CentralBankScraperType")
+                        .IsRequired()
+                        .ValueGeneratedOnAdd()
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)")
+                        .HasDefaultValue("NONE");
+
                     b.Property<string>("CurrencyCode")
                         .IsRequired()
                         .HasColumnType("CHAR(3)");
@@ -624,6 +956,11 @@ namespace BeyeCEO.Infrastructure.Migrations
                         .HasMaxLength(500)
                         .HasColumnType("nvarchar(500)")
                         .HasDefaultValue("");
+
+                    b.Property<bool>("HasLocalData")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bit")
+                        .HasDefaultValue(false);
 
                     b.Property<bool>("IsActive")
                         .ValueGeneratedOnAdd()
@@ -649,6 +986,20 @@ namespace BeyeCEO.Infrastructure.Migrations
                         .IsRequired()
                         .HasMaxLength(100)
                         .HasColumnType("nvarchar(100)");
+
+                    b.Property<string>("StockScraperType")
+                        .IsRequired()
+                        .ValueGeneratedOnAdd()
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)")
+                        .HasDefaultValue("NONE");
+
+                    b.Property<string>("TimeZone")
+                        .IsRequired()
+                        .ValueGeneratedOnAdd()
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)")
+                        .HasDefaultValue("UTC");
 
                     b.HasKey("CountryCode");
 
@@ -763,6 +1114,11 @@ namespace BeyeCEO.Infrastructure.Migrations
                     b.Property<decimal>("Value")
                         .HasPrecision(18, 4)
                         .HasColumnType("decimal(18,4)");
+
+                    b.Property<long>("Volume")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint")
+                        .HasDefaultValue(0L);
 
                     b.HasKey("Id");
 
@@ -901,6 +1257,12 @@ namespace BeyeCEO.Infrastructure.Migrations
                         .HasColumnType("decimal(10,4)")
                         .HasDefaultValue(0m);
 
+                    b.Property<decimal>("ChangePct")
+                        .ValueGeneratedOnAdd()
+                        .HasPrecision(8, 4)
+                        .HasColumnType("decimal(8,4)")
+                        .HasDefaultValue(0m);
+
                     b.Property<string>("CountryCode")
                         .IsRequired()
                         .HasColumnType("CHAR(2)");
@@ -915,6 +1277,11 @@ namespace BeyeCEO.Infrastructure.Migrations
                         .HasMaxLength(20)
                         .HasColumnType("nvarchar(20)");
 
+                    b.Property<int>("Gainers")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int")
+                        .HasDefaultValue(0);
+
                     b.Property<decimal>("GeneralIndex")
                         .ValueGeneratedOnAdd()
                         .HasPrecision(10, 4)
@@ -925,6 +1292,22 @@ namespace BeyeCEO.Infrastructure.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("bit")
                         .HasDefaultValue(false);
+
+                    b.Property<int>("Losers")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int")
+                        .HasDefaultValue(0);
+
+                    b.Property<int>("NoOfSecurities")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int")
+                        .HasDefaultValue(0);
+
+                    b.Property<decimal>("PreviousIndex")
+                        .ValueGeneratedOnAdd()
+                        .HasPrecision(10, 4)
+                        .HasColumnType("decimal(10,4)")
+                        .HasDefaultValue(0m);
 
                     b.Property<DateTime>("RecordedAt")
                         .HasColumnType("datetime2");
@@ -948,6 +1331,11 @@ namespace BeyeCEO.Infrastructure.Migrations
                         .HasColumnType("int")
                         .HasDefaultValue(0);
 
+                    b.Property<int>("Unchanged")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int")
+                        .HasDefaultValue(0);
+
                     b.Property<DateTime?>("UpdatedAt")
                         .HasColumnType("datetime2");
 
@@ -960,6 +1348,135 @@ namespace BeyeCEO.Infrastructure.Migrations
                         .IsUnique();
 
                     b.ToTable("StockExchangeData", "data");
+                });
+
+            modelBuilder.Entity("BeyeCEO.Domain.MarketData.Entities.StockExchangeHistory", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier")
+                        .HasDefaultValueSql("NEWSEQUENTIALID()");
+
+                    b.Property<string>("CountryCode")
+                        .IsRequired()
+                        .HasColumnType("CHAR(2)");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("datetime2")
+                        .HasDefaultValueSql("SYSUTCDATETIME()");
+
+                    b.Property<string>("Exchange")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)");
+
+                    b.Property<decimal>("IndexValue")
+                        .HasPrecision(10, 4)
+                        .HasColumnType("decimal(10,4)");
+
+                    b.Property<bool>("IsDeleted")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bit")
+                        .HasDefaultValue(false);
+
+                    b.Property<string>("PeriodType")
+                        .IsRequired()
+                        .HasMaxLength(10)
+                        .HasColumnType("nvarchar(10)");
+
+                    b.Property<DateTime>("RecordedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CountryCode");
+
+                    b.HasIndex("Exchange", "PeriodType", "RecordedAt")
+                        .HasFilter("[IsDeleted] = 0");
+
+                    b.ToTable("StockExchangeHistory", "data");
+                });
+
+            modelBuilder.Entity("BeyeCEO.Domain.MarketData.Entities.StockExchangeTopMover", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier")
+                        .HasDefaultValueSql("NEWSEQUENTIALID()");
+
+                    b.Property<decimal>("ChangePct")
+                        .ValueGeneratedOnAdd()
+                        .HasPrecision(8, 4)
+                        .HasColumnType("decimal(8,4)")
+                        .HasDefaultValue(0m);
+
+                    b.Property<string>("CompanyName")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
+                    b.Property<string>("CountryCode")
+                        .IsRequired()
+                        .HasColumnType("CHAR(2)");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("datetime2")
+                        .HasDefaultValueSql("SYSUTCDATETIME()");
+
+                    b.Property<string>("Exchange")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)");
+
+                    b.Property<bool>("IsDeleted")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bit")
+                        .HasDefaultValue(false);
+
+                    b.Property<string>("MoverType")
+                        .IsRequired()
+                        .HasMaxLength(10)
+                        .HasColumnType("nvarchar(10)");
+
+                    b.Property<decimal>("Price")
+                        .ValueGeneratedOnAdd()
+                        .HasPrecision(10, 4)
+                        .HasColumnType("decimal(10,4)")
+                        .HasDefaultValue(0m);
+
+                    b.Property<byte>("Rank")
+                        .HasColumnType("tinyint");
+
+                    b.Property<DateTime>("RecordedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("Symbol")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)");
+
+                    b.Property<DateOnly>("TradeDate")
+                        .HasColumnType("date");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CountryCode");
+
+                    b.HasIndex("Exchange", "TradeDate")
+                        .HasFilter("[IsDeleted] = 0");
+
+                    b.HasIndex("Exchange", "MoverType", "Rank", "TradeDate")
+                        .IsUnique();
+
+                    b.ToTable("StockExchangeTopMovers", "data");
                 });
 
             modelBuilder.Entity("BeyeCEO.Domain.News.Entities.NewsArticle", b =>
@@ -994,6 +1511,10 @@ namespace BeyeCEO.Infrastructure.Migrations
                         .HasColumnType("datetime2")
                         .HasDefaultValueSql("SYSUTCDATETIME()");
 
+                    b.Property<string>("FeedName")
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
                     b.Property<string>("ImageUrl")
                         .IsRequired()
                         .ValueGeneratedOnAdd()
@@ -1001,10 +1522,23 @@ namespace BeyeCEO.Infrastructure.Migrations
                         .HasColumnType("nvarchar(1000)")
                         .HasDefaultValue("");
 
+                    b.Property<bool>("IsBankingRelated")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bit")
+                        .HasDefaultValue(true);
+
                     b.Property<bool>("IsDeleted")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("bit")
                         .HasDefaultValue(false);
+
+                    b.Property<bool>("IsOfficialSource")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bit")
+                        .HasDefaultValue(false);
+
+                    b.Property<string>("OriginalLanguage")
+                        .HasColumnType("CHAR(2)");
 
                     b.Property<DateTime>("PublishedAt")
                         .HasColumnType("datetime2");
@@ -1043,6 +1577,12 @@ namespace BeyeCEO.Infrastructure.Migrations
                         .HasColumnType("nvarchar(1000)")
                         .HasDefaultValue("");
 
+                    b.Property<string>("SummaryAR")
+                        .HasColumnType("NVARCHAR(1000)");
+
+                    b.Property<string>("SummaryEN")
+                        .HasColumnType("NVARCHAR(1000)");
+
                     b.Property<string>("TitleAR")
                         .IsRequired()
                         .ValueGeneratedOnAdd()
@@ -1055,12 +1595,24 @@ namespace BeyeCEO.Infrastructure.Migrations
                         .HasMaxLength(500)
                         .HasColumnType("nvarchar(500)");
 
+                    b.Property<string>("TranslationStatus")
+                        .IsRequired()
+                        .ValueGeneratedOnAdd()
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)")
+                        .HasDefaultValue("NotRequested");
+
                     b.Property<DateTime?>("UpdatedAt")
                         .HasColumnType("datetime2");
 
                     b.HasKey("Id");
 
                     b.HasIndex("CountryCode");
+
+                    b.HasIndex("SourceUrl")
+                        .IsUnique()
+                        .HasDatabaseName("UX_NewsArticles_SourceUrl_Active")
+                        .HasFilter("[IsDeleted] = 0 AND [SourceUrl] IS NOT NULL AND [SourceUrl] <> ''");
 
                     b.HasIndex("Category", "PublishedAt")
                         .HasFilter("[IsDeleted] = 0");
@@ -1092,11 +1644,21 @@ namespace BeyeCEO.Infrastructure.Migrations
 
                     b.HasOne("BeyeCEO.Domain.MarketData.Entities.Country", "DefaultCountry")
                         .WithMany()
-                        .HasForeignKey("DefaultCountryCountryCode");
+                        .HasForeignKey("DefaultCountryCode")
+                        .OnDelete(DeleteBehavior.Restrict);
 
                     b.Navigation("Bank");
 
                     b.Navigation("DefaultCountry");
+                });
+
+            modelBuilder.Entity("BeyeCEO.Domain.KPIs.Entites.BeyeView", b =>
+                {
+                    b.HasOne("BeyeCEO.Domain.MarketData.Entities.Bank", null)
+                        .WithMany()
+                        .HasForeignKey("BankId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
                 });
 
             modelBuilder.Entity("BeyeCEO.Domain.KPIs.Entites.KpiSnapshot", b =>
@@ -1130,14 +1692,10 @@ namespace BeyeCEO.Infrastructure.Migrations
                         .IsRequired();
 
                     b.HasOne("BeyeCEO.Domain.MarketData.Entities.Country", "Country")
-                        .WithMany()
+                        .WithMany("BankCountries")
                         .HasForeignKey("CountryCode")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
-
-                    b.HasOne("BeyeCEO.Domain.MarketData.Entities.Country", null)
-                        .WithMany("BankCountries")
-                        .HasForeignKey("CountryCode1");
 
                     b.Navigation("Bank");
 
@@ -1167,6 +1725,28 @@ namespace BeyeCEO.Infrastructure.Migrations
                 });
 
             modelBuilder.Entity("BeyeCEO.Domain.MarketData.Entities.StockExchangeData", b =>
+                {
+                    b.HasOne("BeyeCEO.Domain.MarketData.Entities.Country", "Country")
+                        .WithMany()
+                        .HasForeignKey("CountryCode")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("Country");
+                });
+
+            modelBuilder.Entity("BeyeCEO.Domain.MarketData.Entities.StockExchangeHistory", b =>
+                {
+                    b.HasOne("BeyeCEO.Domain.MarketData.Entities.Country", "Country")
+                        .WithMany()
+                        .HasForeignKey("CountryCode")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("Country");
+                });
+
+            modelBuilder.Entity("BeyeCEO.Domain.MarketData.Entities.StockExchangeTopMover", b =>
                 {
                     b.HasOne("BeyeCEO.Domain.MarketData.Entities.Country", "Country")
                         .WithMany()

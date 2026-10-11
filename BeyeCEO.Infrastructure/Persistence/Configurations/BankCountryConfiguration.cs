@@ -48,8 +48,14 @@ namespace BeyeCEO.Infrastructure.Persistence.Configurations
             builder.HasIndex(e => e.BankId)
                 .HasFilter("[IsActive] = 1");
 
+            // WithMany() with no argument left Country.BankCountries as an
+            // unmatched convention nav, so EF created a second, phantom
+            // relationship with a shadow "CountryCode1" FK that doesn't exist
+            // in the database — any query against BankCountries then failed
+            // with "Invalid column name 'CountryCode1'". Wiring the actual
+            // inverse nav collapses it back to the one real relationship.
             builder.HasOne(e => e.Country)
-                .WithMany()
+                .WithMany(c => c.BankCountries)
                 .HasForeignKey(e => e.CountryCode)
                 .OnDelete(DeleteBehavior.Restrict);
         }

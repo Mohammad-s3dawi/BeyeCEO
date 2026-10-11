@@ -76,11 +76,43 @@ namespace BeyeCEO.Infrastructure.Persistence.Configurations
             builder.Property(e => e.IsDeleted)
                 .HasDefaultValue(false);
 
+            builder.Property(e => e.SummaryEN)
+                .HasColumnType("NVARCHAR(1000)");
+
+            builder.Property(e => e.SummaryAR)
+                .HasColumnType("NVARCHAR(1000)");
+
+            builder.Property(e => e.OriginalLanguage)
+                .HasColumnType("CHAR(2)");
+
+            builder.Property(e => e.TranslationStatus)
+                .HasMaxLength(20)
+                .IsRequired()
+                .HasDefaultValue("NotRequested");
+
+            builder.Property(e => e.IsBankingRelated)
+                .IsRequired()
+                .HasDefaultValue(true);
+
+            builder.Property(e => e.IsOfficialSource)
+                .IsRequired()
+                .HasDefaultValue(false);
+
+            builder.Property(e => e.FeedName)
+                .HasMaxLength(200);
+
             builder.HasIndex(e => new { e.Scope, e.CountryCode, e.PublishedAt })
                 .HasFilter("[IsDeleted] = 0");
 
             builder.HasIndex(e => new { e.Category, e.PublishedAt })
                 .HasFilter("[IsDeleted] = 0");
+
+            // De-dupe guard — see NewsPipelineColumns migration for the one-time
+            // soft-delete of existing duplicates that runs before this index is created.
+            builder.HasIndex(e => e.SourceUrl)
+                .IsUnique()
+                .HasDatabaseName("UX_NewsArticles_SourceUrl_Active")
+                .HasFilter("[IsDeleted] = 0 AND [SourceUrl] IS NOT NULL AND [SourceUrl] <> ''");
 
             // FK nullable — الأخبار الدولية ما عندها CountryCode
             builder.HasOne(e => e.Country)
