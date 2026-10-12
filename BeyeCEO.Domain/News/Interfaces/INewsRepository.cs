@@ -45,5 +45,10 @@ namespace BeyeCEO.Domain.News.Interfaces
         // tool (Step 9d) to see which currently-deleted rows would now flip
         // back to KEEP. Never writes.
         Task<List<NewsArticle>> GetAllBeforeIncludingDeletedAsync(DateTime beforeUtc);
+
+        // Step 11b — how many non-deleted rows of this source already use
+        // each distinct non-empty ImageUrl. Feeds the site-default-image
+        // safeguard (SiteDefaultImageGuard) for the og:image fallback.
+        Task<Dictionary<string, int>> GetImageUrlCountsAsync(string sourceName);
     }
 }

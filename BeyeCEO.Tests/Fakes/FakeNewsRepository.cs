@@ -67,5 +67,10 @@ namespace BeyeCEO.Tests.Fakes
 
         public Task<List<NewsArticle>> GetAllBeforeIncludingDeletedAsync(DateTime beforeUtc) =>
             Task.FromResult(AllBeforeIncludingDeleted);
+
+        public Dictionary<string, int> ImageUrlCounts { get; set; } = new();
+
+        public Task<Dictionary<string, int>> GetImageUrlCountsAsync(string sourceName) =>
+            Task.FromResult(ImageUrlCounts);
     }
 }

@@ -100,7 +100,7 @@ namespace BeyeCEO.Infrastructure.NewsAggregation
                 return result;
             }
 
-            var items = FeedParser.Parse(body, feed.Format);
+            var items = FeedParser.Parse(body, feed.Format, feed.Url);
             if (items.Count == 0)
             {
                 result.Status = "parsed but 0 items";

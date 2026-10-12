@@ -2,6 +2,7 @@ using BeyeCEO.Domain.News.Entities;
 using BeyeCEO.Domain.News.Enums;
 using BeyeCEO.Domain.News.Interfaces;
 using BeyeCEO.Infrastructure.ExternalServices;
+using BeyeCEO.Infrastructure.NewsAggregation.ImageFallback;
 using BeyeCEO.Infrastructure.Persistence.Repositories;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
@@ -26,6 +27,18 @@ namespace BeyeCEO.Infrastructure.NewsAggregation
         public int WouldStoreOrStored { get; set; }
         public DateTime? NewestItemDate { get; set; }
         public bool Stale { get; set; }
+
+        // Step 11b — og:image fallback stats for this feed's run.
+        public int ImageFromFeed { get; set; }
+        public int ImageFromFallback { get; set; }
+        public int ImageFallbackFetchesMade { get; set; }
+        public int ImageFallbackFetchesSkipped { get; set; }
+
+        // Breakdown of ImageFallbackFetchesSkipped by PageImageFetchStatus
+        // name (RobotsDisallowed, MaxFetchesPerDomainExceeded, etc.) — lets
+        // the dry-run report distinguish "robots said no" from "hit the
+        // per-domain cap" from "page had nothing usable."
+        public Dictionary<string, int> ImageFallbackSkipReasons { get; set; } = new();
     }
 
     public class GroupRunResult
@@ -56,6 +69,7 @@ namespace BeyeCEO.Infrastructure.NewsAggregation
         private readonly INewsRepository _newsRepo;
         private readonly IConfiguration _config;
         private readonly SourcesHealthTracker _health;
+        private readonly IPageMetadataFetcher _pageFetcher;
         private readonly ILogger<NewsPipelineRunner> _logger;
 
         public NewsPipelineRunner(
@@ -65,6 +79,7 @@ namespace BeyeCEO.Infrastructure.NewsAggregation
             INewsRepository newsRepo,
             IConfiguration config,
             SourcesHealthTracker health,
+            IPageMetadataFetcher pageFetcher,
             ILogger<NewsPipelineRunner> logger)
         {
             _fetcher = fetcher;
@@ -73,6 +88,7 @@ namespace BeyeCEO.Infrastructure.NewsAggregation
             _newsRepo = newsRepo;
             _config = config;
             _health = health;
+            _pageFetcher = pageFetcher;
             _logger = logger;
         }
 
@@ -275,6 +291,9 @@ namespace BeyeCEO.Infrastructure.NewsAggregation
                 toStore.Add(article);
             }
 
+            feedResult.ImageFromFeed = toStore.Count(a => !string.IsNullOrWhiteSpace(a.ImageUrl));
+            await ApplyImageFallbackAsync(feed, toStore, feedResult);
+
             feedResult.WouldStoreOrStored = toStore.Count;
 
             if (store && storageEnabled && toStore.Count > 0)
@@ -285,6 +304,68 @@ namespace BeyeCEO.Infrastructure.NewsAggregation
                 .ToList();
 
             return (feedResult, titles);
+        }
+
+        // Step 11b — og:image fallback. Only for feeds explicitly
+        // allow-listed via ImageFallback.Enabled, only for items that will
+        // be stored with no image from the feed itself. Never blocks the
+        // run: any fetch exception is swallowed and counted as skipped.
+        private async Task ApplyImageFallbackAsync(FeedOptions feed, List<NewsArticle> toStore, FeedRunResult feedResult)
+        {
+            if (feed.ImageFallback is not { Enabled: true }) return;
+
+            var candidates = toStore.Where(a => string.IsNullOrWhiteSpace(a.ImageUrl)).ToList();
+            if (candidates.Count == 0) return;
+
+            var existingCounts = await _newsRepo.GetImageUrlCountsAsync(feed.Name);
+            var runCounts = new Dictionary<string, int>();
+
+            foreach (var article in candidates)
+            {
+                if (string.IsNullOrWhiteSpace(article.SourceUrl)) continue;
+
+                try
+                {
+                    var result = await _pageFetcher.TryGetImageUrlAsync(article.SourceUrl, feed.ImageFallback.MaxBytes);
+
+                    if (result.Status != PageImageFetchStatus.Found || result.ImageUrl == null)
+                    {
+                        feedResult.ImageFallbackFetchesSkipped++;
+                        IncrementSkipReason(feedResult, result.Status.ToString());
+                        continue;
+                    }
+
+                    feedResult.ImageFallbackFetchesMade++;
+
+                    existingCounts.TryGetValue(result.ImageUrl, out var existingCount);
+                    runCounts.TryGetValue(result.ImageUrl, out var runCount);
+
+                    if (SiteDefaultImageGuard.IsSiteDefault(existingCount, runCount))
+                    {
+                        _logger.LogInformation(
+                            "ApplyImageFallbackAsync: {Feed} — rejecting {Url} as a site-default image (seen {Count} times)",
+                            feed.Name, result.ImageUrl, existingCount + runCount);
+                        IncrementSkipReason(feedResult, "RejectedAsSiteDefault");
+                        continue;
+                    }
+
+                    article.SetImageUrl(result.ImageUrl);
+                    feedResult.ImageFromFallback++;
+                    runCounts[result.ImageUrl] = runCount + 1;
+                }
+                catch (Exception ex)
+                {
+                    feedResult.ImageFallbackFetchesSkipped++;
+                    IncrementSkipReason(feedResult, "Exception");
+                    _logger.LogInformation(ex, "ApplyImageFallbackAsync: {Feed} — fallback failed for {Url}", feed.Name, article.SourceUrl);
+                }
+            }
+        }
+
+        private static void IncrementSkipReason(FeedRunResult feedResult, string reason)
+        {
+            feedResult.ImageFallbackSkipReasons.TryGetValue(reason, out var count);
+            feedResult.ImageFallbackSkipReasons[reason] = count + 1;
         }
 
         private async Task<(FeedRunResult Result, List<string> Titles)> RunGuardianAsync(bool store)

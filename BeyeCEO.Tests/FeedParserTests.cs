@@ -178,6 +178,109 @@ namespace BeyeCEO.Tests
             Assert.Empty(FeedParser.Parse(null!, "rss"));
         }
 
+        // ── Step 11b: media:thumbnail + relative URL resolution ──────────
+
+        [Fact]
+        public void Parse_Rss20_FallsBackToMediaThumbnail_WhenNoEnclosureOrMediaContent()
+        {
+            const string xml = """
+                <?xml version="1.0" encoding="UTF-8"?>
+                <rss version="2.0" xmlns:media="http://search.yahoo.com/mrss/">
+                <channel><item>
+                <title>Thumbnail only</title>
+                <link>https://example.com/thumb</link>
+                <description>text, no img tag here</description>
+                <media:thumbnail url="https://example.com/thumb.jpg" />
+                <pubDate>Wed, 07 Oct 2026 10:03:38 +0300</pubDate>
+                </item></channel></rss>
+                """;
+
+            var items = FeedParser.Parse(xml, "rss");
+
+            Assert.Equal("https://example.com/thumb.jpg", items[0].ImageUrl);
+        }
+
+        [Fact]
+        public void Parse_Rss20_EnclosureStillWinsOverMediaThumbnail()
+        {
+            const string xml = """
+                <?xml version="1.0" encoding="UTF-8"?>
+                <rss version="2.0" xmlns:media="http://search.yahoo.com/mrss/">
+                <channel><item>
+                <title>Both present</title>
+                <link>https://example.com/both</link>
+                <description>text</description>
+                <enclosure url="https://example.com/enclosure.jpg" type="image/jpeg" />
+                <media:thumbnail url="https://example.com/thumb.jpg" />
+                <pubDate>Wed, 07 Oct 2026 10:03:38 +0300</pubDate>
+                </item></channel></rss>
+                """;
+
+            var items = FeedParser.Parse(xml, "rss");
+
+            Assert.Equal("https://example.com/enclosure.jpg", items[0].ImageUrl);
+        }
+
+        [Fact]
+        public void Parse_Rss20_ProtocolRelativeEnclosure_IsResolvedToHttps()
+        {
+            const string xml = """
+                <?xml version="1.0" encoding="UTF-8"?>
+                <rss version="2.0"><channel><item>
+                <title>Protocol-relative</title>
+                <link>https://example.com/pr</link>
+                <description>text</description>
+                <enclosure url="//cdn.example.com/photo.jpg" type="image/jpeg" />
+                <pubDate>Wed, 07 Oct 2026 10:03:38 +0300</pubDate>
+                </item></channel></rss>
+                """;
+
+            var items = FeedParser.Parse(xml, "rss", "https://example.com/rss");
+
+            Assert.Equal("https://cdn.example.com/photo.jpg", items[0].ImageUrl);
+        }
+
+        [Fact]
+        public void Parse_Rss20_RootRelativeEnclosure_IsResolvedAgainstFeedBaseUrl()
+        {
+            const string xml = """
+                <?xml version="1.0" encoding="UTF-8"?>
+                <rss version="2.0"><channel><item>
+                <title>Root-relative</title>
+                <link>https://example.com/rr</link>
+                <description>text</description>
+                <enclosure url="/images/photo.jpg" type="image/jpeg" />
+                <pubDate>Wed, 07 Oct 2026 10:03:38 +0300</pubDate>
+                </item></channel></rss>
+                """;
+
+            // Base is the feed endpoint itself — only scheme/host/port matter
+            // for root-relative resolution, so this still resolves correctly
+            // even though /feed/rss isn't the site's homepage.
+            var items = FeedParser.Parse(xml, "rss", "https://example.com/feed/rss");
+
+            Assert.Equal("https://example.com/images/photo.jpg", items[0].ImageUrl);
+        }
+
+        [Fact]
+        public void Parse_Rss20_RootRelativeEnclosure_WithNoBaseUrl_IsLeftAsIs()
+        {
+            const string xml = """
+                <?xml version="1.0" encoding="UTF-8"?>
+                <rss version="2.0"><channel><item>
+                <title>No base</title>
+                <link>https://example.com/nb</link>
+                <description>text</description>
+                <enclosure url="/images/photo.jpg" type="image/jpeg" />
+                <pubDate>Wed, 07 Oct 2026 10:03:38 +0300</pubDate>
+                </item></channel></rss>
+                """;
+
+            var items = FeedParser.Parse(xml, "rss");
+
+            Assert.Equal("/images/photo.jpg", items[0].ImageUrl);
+        }
+
         [Fact]
         public void Parse_Rss20_SummaryIsTruncatedTo600Chars()
         {

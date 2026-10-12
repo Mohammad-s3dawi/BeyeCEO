@@ -20,7 +20,11 @@ namespace BeyeCEO.Infrastructure.NewsAggregation
         private static readonly Regex ControlCharsRegex = new(
             "[\\x00-\\x08\\x0B\\x0C\\x0E-\\x1F]", RegexOptions.Compiled);
 
-        public static List<ParsedFeedItem> Parse(string xml, string format)
+        // `baseUrl` (the feed's own URL) resolves protocol-relative ("//host/x")
+        // and root-relative ("/x") image URLs — only the scheme/host/port of
+        // baseUrl matter for that, so the feed endpoint URL works fine even
+        // though it isn't the site's homepage.
+        public static List<ParsedFeedItem> Parse(string xml, string format, string? baseUrl = null)
         {
             if (string.IsNullOrWhiteSpace(xml)) return new List<ParsedFeedItem>();
 
@@ -34,7 +38,7 @@ namespace BeyeCEO.Infrastructure.NewsAggregation
 
             try
             {
-                return fmt == "atom" ? ParseAtom(doc) : ParseRssLike(doc);
+                return fmt == "atom" ? ParseAtom(doc, baseUrl) : ParseRssLike(doc, baseUrl);
             }
             catch
             {
@@ -68,7 +72,7 @@ namespace BeyeCEO.Infrastructure.NewsAggregation
             return xml;
         }
 
-        private static List<ParsedFeedItem> ParseRssLike(XDocument doc)
+        private static List<ParsedFeedItem> ParseRssLike(XDocument doc, string? baseUrl)
         {
             var result = new List<ParsedFeedItem>();
 
@@ -90,9 +94,14 @@ namespace BeyeCEO.Infrastructure.NewsAggregation
                         .FirstOrDefault(e => e.Name.LocalName == "content" && e.Attribute("url") != null)
                         ?.Attribute("url")?.Value;
 
+                    var mediaThumbnailUrl = item.Elements()
+                        .FirstOrDefault(e => e.Name.LocalName == "thumbnail" && e.Attribute("url") != null)
+                        ?.Attribute("url")?.Value;
+
                     var image = FirstNonEmpty(
                         enclosureUrl,
                         mediaContentUrl,
+                        mediaThumbnailUrl,
                         ExtractFirstImgSrc(contentEncoded),
                         ExtractFirstImgSrc(description));
 
@@ -106,7 +115,7 @@ namespace BeyeCEO.Infrastructure.NewsAggregation
                         Summary = Summarize(description ?? contentEncoded),
                         PublishedAtUtc = publishedAtUtc,
                         DateGuessed = guessed,
-                        ImageUrl = string.IsNullOrWhiteSpace(image) ? null : image
+                        ImageUrl = ResolveImageUrl(image, baseUrl)
                     });
                 }
                 catch
@@ -118,7 +127,7 @@ namespace BeyeCEO.Infrastructure.NewsAggregation
             return result;
         }
 
-        private static List<ParsedFeedItem> ParseAtom(XDocument doc)
+        private static List<ParsedFeedItem> ParseAtom(XDocument doc, string? baseUrl)
         {
             var result = new List<ParsedFeedItem>();
 
@@ -144,9 +153,14 @@ namespace BeyeCEO.Infrastructure.NewsAggregation
                         .FirstOrDefault(e => e.Name.LocalName == "content" && e.Attribute("url") != null)
                         ?.Attribute("url")?.Value;
 
+                    var mediaThumbnailUrl = entry.Elements()
+                        .FirstOrDefault(e => e.Name.LocalName == "thumbnail" && e.Attribute("url") != null)
+                        ?.Attribute("url")?.Value;
+
                     var image = FirstNonEmpty(
                         enclosureHref,
                         mediaContentUrl,
+                        mediaThumbnailUrl,
                         ExtractFirstImgSrc(summaryRaw));
 
                     var (publishedAtUtc, guessed) = ParseDate(updated);
@@ -159,7 +173,7 @@ namespace BeyeCEO.Infrastructure.NewsAggregation
                         Summary = Summarize(summaryRaw),
                         PublishedAtUtc = publishedAtUtc,
                         DateGuessed = guessed,
-                        ImageUrl = string.IsNullOrWhiteSpace(image) ? null : image
+                        ImageUrl = ResolveImageUrl(image, baseUrl)
                     });
                 }
                 catch
@@ -169,6 +183,30 @@ namespace BeyeCEO.Infrastructure.NewsAggregation
             }
 
             return result;
+        }
+
+        // Resolves protocol-relative ("//host/x") and root-relative ("/x")
+        // image URLs against the feed's own URL — only scheme/host/port of
+        // `baseUrl` matter for a root-relative resolution, so the feed
+        // endpoint itself is a fine base even though it isn't the homepage.
+        // Already-absolute URLs pass through unchanged.
+        private static string? ResolveImageUrl(string? image, string? baseUrl)
+        {
+            if (string.IsNullOrWhiteSpace(image)) return null;
+            var trimmed = image.Trim();
+
+            if (trimmed.StartsWith("//", StringComparison.Ordinal))
+                return "https:" + trimmed;
+
+            if (Uri.TryCreate(trimmed, UriKind.Absolute, out _))
+                return trimmed;
+
+            if (!string.IsNullOrWhiteSpace(baseUrl) &&
+                Uri.TryCreate(baseUrl, UriKind.Absolute, out var baseUri) &&
+                Uri.TryCreate(baseUri, trimmed, out var resolved))
+                return resolved.ToString();
+
+            return trimmed;
         }
 
         private static string? ElementText(XElement parent, string localName) =>

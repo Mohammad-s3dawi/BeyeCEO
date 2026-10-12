@@ -21,5 +21,19 @@ namespace BeyeCEO.Infrastructure.NewsAggregation
         public int? MaxItemAgeDays { get; set; }
 
         public bool Enabled { get; set; } = true;
+
+        // Step 11b — og:image fallback, allow-listed per feed. Null/Enabled=false
+        // means "never fetch article pages for this feed's images."
+        public ImageFallbackOptions? ImageFallback { get; set; }
+    }
+
+    public class ImageFallbackOptions
+    {
+        public bool Enabled { get; set; } = false;
+
+        // Stop reading the response stream once this many bytes have been
+        // read without finding an image meta tag (default 128KB — see
+        // Step 11a: some WordPress sites need more, e.g. Watan News/256KB).
+        public int MaxBytes { get; set; } = 131072;
     }
 }

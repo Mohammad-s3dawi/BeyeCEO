@@ -91,6 +91,10 @@ namespace BeyeCEO.Domain.News.Entities
             };
         }
 
+        // Step 11b — og:image fallback sets this after the article is
+        // mapped, before it's saved, only when ImageUrl was empty.
+        public void SetImageUrl(string imageUrl) => ImageUrl = imageUrl;
+
         private static int CalculateReadTime(string content)
         {
             if (string.IsNullOrWhiteSpace(content)) return 1;

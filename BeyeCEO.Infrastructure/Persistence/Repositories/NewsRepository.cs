@@ -189,6 +189,16 @@ namespace BeyeCEO.Infrastructure.Persistence.Repositories
                 .ToListAsync();
         }
 
+        public async Task<Dictionary<string, int>> GetImageUrlCountsAsync(string sourceName)
+        {
+            return await _context.NewsArticles
+                .Where(a => !a.IsDeleted && a.SourceName == sourceName && a.ImageUrl != null && a.ImageUrl != "")
+                .GroupBy(a => a.ImageUrl)
+                .Select(g => new { Url = g.Key, Count = g.Count() })
+                .AsNoTracking()
+                .ToDictionaryAsync(x => x.Url, x => x.Count);
+        }
+
         // Pure, unit-testable: collapses same-article duplicates within a
         // single incoming batch (e.g. Guardian returning the same article
         // from two overlapping section searches) by normalized link,

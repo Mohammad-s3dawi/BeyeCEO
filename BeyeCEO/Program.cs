@@ -117,7 +117,15 @@ builder.Services.AddHttpClient<BeyePerformanceClient>(c =>
 builder.Services.AddHttpClient<ASEScraper>();
 builder.Services.AddHttpClient<ASEClient>();
 builder.Services.AddHttpClient<CBJScraper>();
-builder.Services.AddHttpClient<GuardianClient>();
+
+// Step 11b — one honest, configurable UA for every news-pipeline HTTP call
+// (feeds, Guardian, og:image lookups). No spoofed browser UA. Set the real
+// contact URL/email in News:Http:UserAgent per environment — see appsettings.json.
+var newsUserAgent = builder.Configuration.GetValue<string>("News:Http:UserAgent")
+    ?? "BeyeCEO-NewsReader/1.0";
+
+builder.Services.AddHttpClient<GuardianClient>(c =>
+    c.DefaultRequestHeaders.Add("User-Agent", newsUserAgent));
 builder.Services.AddHttpClient<NewsApiClient>(c =>
     c.DefaultRequestHeaders.Add("User-Agent", "BeyeCEO/1.0"));
 builder.Services.AddHttpClient<RssNewsClient>(c =>
@@ -129,12 +137,32 @@ builder.Services.AddSingleton<SourcesHealthTracker>();
 builder.Services.AddHttpClient<FeedFetcherService>(c =>
 {
     c.Timeout = TimeSpan.FromSeconds(15);
-    c.DefaultRequestHeaders.Add("User-Agent",
-        "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36");
+    c.DefaultRequestHeaders.Add("User-Agent", newsUserAgent);
 });
 builder.Services.AddScoped<NewsPipelineRunner>();
 builder.Services.AddScoped<NewsFeedJobs>();
 builder.Services.AddScoped<OldRowsClassificationService>();
+
+// Step 11b — polite og:image fallback. Named client so singleton services
+// (robots cache) can create short-lived HttpClients via the factory
+// without becoming "captive dependencies."
+builder.Services.AddHttpClient("NewsImageFallback", c =>
+{
+    c.Timeout = TimeSpan.FromSeconds(10);
+    c.DefaultRequestHeaders.Add("User-Agent", newsUserAgent);
+}).ConfigurePrimaryHttpMessageHandler(() => new HttpClientHandler
+{
+    AllowAutoRedirect = true,
+    MaxAutomaticRedirections = 2
+});
+builder.Services.AddSingleton<BeyeCEO.Infrastructure.NewsAggregation.ImageFallback.IRobotsTxtCache,
+    BeyeCEO.Infrastructure.NewsAggregation.ImageFallback.RobotsTxtCache>();
+builder.Services.AddSingleton<BeyeCEO.Infrastructure.NewsAggregation.ImageFallback.IDomainRateLimiter,
+    BeyeCEO.Infrastructure.NewsAggregation.ImageFallback.DomainRateLimiter>();
+builder.Services.AddSingleton<BeyeCEO.Infrastructure.NewsAggregation.ImageFallback.IImageFetchFailureCache,
+    BeyeCEO.Infrastructure.NewsAggregation.ImageFallback.ImageFetchFailureCache>();
+builder.Services.AddScoped<BeyeCEO.Infrastructure.NewsAggregation.ImageFallback.IPageMetadataFetcher,
+    BeyeCEO.Infrastructure.NewsAggregation.ImageFallback.PageMetadataFetcher>();
 ///
 // ?? Hangfire ??????????????????????????????????????????????
 builder.Services.AddHangfire(config => config
